@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>車両在庫管理システム</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <!-- Google Identity Services (Google Drive API連携用) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function refreshIcons() {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                try {
+                    window.lucide.createIcons();
+                } catch (e) {
+                    console.warn('Lucide icon render warning:', e);
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- ログイン・新規登録画面オーバーレイ -->
+    <div id="auth-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-slate-800 text-white p-6 text-center space-y-2 border-b border-slate-700">
+                <h2 class="text-xl font-bold tracking-tight">車両在庫管理システム</h2>
+                <p class="text-xs text-slate-400">アクセスするにはアカウント認証が必要です</p>
+            </div>
+
+            <div class="grid grid-cols-2 border-b border-slate-200 bg-slate-50 text-sm font-semibold">
+                <button type="button" id="tab-login" onclick="switchAuthTab('login')" class="py-3 text-emerald-600 border-b-2 border-emerald-600 bg-white transition">
+                    ログイン
+                </button>
+                <button type="button" id="tab-register" onclick="switchAuthTab('register')" class="py-3 text-slate-500 hover:text-slate-800 transition">
+                    新規アカウント作成
+                </button>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="p-6 space-y-4">
+                <div id="auth-error" class="hidden bg-rose-50 border border-rose-200 text-rose-600 text-xs p-3 rounded-lg flex items-center space-x-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                    <span id="auth-error-msg">エラーメッセージ</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">ユーザーアカウント (ID)</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="auth-username" required minlength="3" placeholder="例: kato_fan" 
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">パスワード</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="password" id="auth-password" required minlength="4" placeholder="4文字以上のパスワード" 
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div id="auth-confirm-group" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">パスワード（確認用）</label>
+                    <div class="relative">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="password" id="auth-password-confirm" placeholder="もう一度パスワードを入力" 
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-md transition flex items-center justify-center space-x-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <span>ログイン</span>
+                </button>
+
+                <div class="pt-3 border-t border-slate-100 text-center">
+                    <p class="text-xs text-slate-500 mb-2">すぐにお試しいただく場合：</p>
+                    <button type="button" onclick="fillDemoAccount()" class="inline-flex items-center space-x-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md transition">
+                        <i data-lucide="key" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span>デモアカウントを入力 (ID: admin / PW: 1234)</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- アプリケーション本体ラッパー -->
+    <div id="app-wrapper" class="hidden min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center">
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">車両在庫管理システム</h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Model Railway Rolling Stock Inventory</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="hidden sm:flex items-center space-x-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span id="current-user-display" class="font-semibold">admin</span>
+                </div>
+                <button onclick="openPasswordModal()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="パスワード変更">
+                    <i data-lucide="key-round" class="w-4 h-4"></i>
+                    <span class="hidden lg:inline">パスワード変更</span>
+                </button>
+                <button onclick="openGDriveModal()" id="gdrive-header-btn" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="Googleマイドライブと同期・保存">
+                    <i data-lucide="cloud" id="gdrive-header-icon" class="w-4 h-4 text-slate-400"></i>
+                    <span id="gdrive-header-label" class="hidden md:inline">Googleドライブ</span>
+                </button>
+                <input type="file" id="csv-import-input" accept=".csv" class="hidden" onchange="importCSV(event)">
+                <button onclick="document.getElementById('csv-import-input').click()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="CSVファイルからインポート">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">CSVインポート</span>
+                </button>
+                <button onclick="exportCSV()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="CSV形式でエクスポート">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">CSVエクスポート</span>
+                </button>
+                <button onclick="openModal()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>新規登録</span>
+                </button>
+                <button onclick="logout()" class="flex items-center space-x-1 bg-slate-800 hover:bg-rose-600/90 text-slate-300 hover:text-white px-2.5 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="ログアウト">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+
+        <!-- 統計ダッシュボード -->
+        <section class="space-y-2.5">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-medium text-slate-500">登録車両数</p>
+                        <p class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight mt-0.5"><span id="stat-total-sets">0</span><span class="text-xs font-normal text-slate-500 ml-1">両/セット</span></p>
+                    </div>
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-medium text-slate-500">動力車数</p>
+                        <p class="text-xl sm:text-2xl font-bold text-amber-600 leading-tight mt-0.5"><span id="stat-motor-cars">0</span><span class="text-xs font-normal text-slate-500 ml-1">両</span></p>
+                    </div>
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-medium text-slate-500">Box数</p>
+                        <p class="text-xl sm:text-2xl font-bold text-emerald-600 leading-tight mt-0.5"><span id="stat-max-box">0</span><span class="text-xs font-normal text-slate-500 ml-1">箱</span></p>
+                    </div>
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                        <i data-lucide="package" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-medium text-slate-500">定価合計額</p>
+                        <p id="stat-total-value" class="text-lg sm:text-xl font-bold text-slate-800 leading-tight mt-0.5">¥0</p>
+                    </div>
+                    <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                        <i data-lucide="wallet" class="w-5 h-5"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 種別ごとの車両数 -->
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">種別ごとの車両数</p>
+                <div class="grid grid-cols-7 gap-1.5 text-center flex-1">
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">SL</span>
+                        <span id="stat-type-SL" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">DL</span>
+                        <span id="stat-type-DL" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">EL</span>
+                        <span id="stat-type-EL" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">DC</span>
+                        <span id="stat-type-DC" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">PC</span>
+                        <span id="stat-type-PC" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">EC</span>
+                        <span id="stat-type-EC" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded px-1.5 py-1 flex items-center justify-center space-x-1.5">
+                        <span class="text-[11px] font-bold text-indigo-700">FC</span>
+                        <span id="stat-type-FC" class="text-sm font-bold text-slate-800">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 検索・フィルターバー -->
+        <section class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 space-y-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+                <div class="lg:col-span-2 relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="filter-search" oninput="renderList()" placeholder="登録番号・品名・セット名・品番・分類・備考で検索..." 
+                        class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                </div>
+
+                <div>
+                    <select id="filter-maker" onchange="renderList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべてのメーカー</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filter-type" onchange="renderList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべての種別</option>
+                        <option value="SL">SL</option>
+                        <option value="DL">DL</option>
+                        <option value="EL">EL</option>
+                        <option value="DC">DC</option>
+                        <option value="PC">PC</option>
+                        <option value="EC">EC</option>
+                        <option value="FC">FC</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filter-form" onchange="renderList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべての形態</option>
+                        <option value="セット">セット</option>
+                        <option value="単品">単品</option>
+                        <option value="バラシ">バラシ</option>
+                        <option value="ASSY組立品">ASSY組立品</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filter-box" onchange="renderList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべてのBox No.</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-slate-500 font-medium">絞り込み:</span>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition">
+                        <input type="checkbox" id="filter-motor" onchange="renderList()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <span>動力ありのみ</span>
+                    </label>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition">
+                        <input type="checkbox" id="filter-light" onchange="renderList()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <span>室内灯ありのみ</span>
+                    </label>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition">
+                        <input type="checkbox" id="filter-bmt" onchange="renderList()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <span>BMT「付」のみ</span>
+                    </label>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition">
+                        <input type="checkbox" id="filter-new" onchange="renderList()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <span>新品のみ</span>
+                    </label>
+                </div>
+                <button onclick="resetFilters()" class="text-slate-500 hover:text-slate-800 underline">フィルターをリセット</button>
+            </div>
+        </section>
+
+        <!-- 車両一覧グリッド -->
+        <section>
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                    <span>在籍車両一覧</span>
+                    <span id="filtered-count" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full">0件</span>
+                </h2>
+                <div class="flex items-center space-x-2 text-xs text-slate-500">
+                    <span>並び替え:</span>
+                    <select id="sort-by" onchange="renderList()" class="bg-white border border-slate-300 rounded-md px-2 py-1 text-slate-700 focus:outline-none">
+                        <option value="newest">登録番号 新しい順</option>
+                        <option value="oldest">登録番号 古い順</option>
+                        <option value="box_asc">Box No. 昇順</option>
+                        <option value="maker">メーカー順</option>
+                        <option value="price_desc">定価が高い順</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            </div>
+
+            <div id="empty-state" class="hidden bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
+                <div class="mx-auto w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3">
+                    <i data-lucide="train-track" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-800">該当する車両が見つかりません</h3>
+                <p class="text-sm text-slate-500 mt-1">検索条件を変更するか、「新規登録」から車両を追加してください。</p>
+                <button onclick="openModal()" class="mt-4 inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>最初の車両を登録する</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <p>※データはブラウザのローカルストレージに自動保存されます。</p>
+            <div class="flex space-x-4">
+                <button onclick="loadSampleData()" class="hover:text-emerald-600 underline">サンプルデータを再読込</button>
+                <button onclick="confirmClearAll()" class="hover:text-rose-600 underline">全データを初期化</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 登録・編集モーダル -->
+    <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 id="modal-title" class="text-lg font-bold flex items-center space-x-2">
+                    <i data-lucide="train-front" class="w-5 h-5 text-emerald-400"></i>
+                    <span>新規登録</span>
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="item-form" onsubmit="saveItem(event)" class="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="item-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録番号（自動採番）</label>
+                        <input type="text" id="item-reg-number" readonly 
+                            class="w-full px-3 py-2 bg-slate-200/70 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-700 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">同一商品番号</label>
+                        <input type="number" id="item-duplicate-no" min="1" value="1" required
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録日</label>
+                        <input type="date" id="item-date" required
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">メーカー <span class="text-rose-500">*</span></label>
+                        <div class="flex space-x-1.5">
+                            <select id="item-maker" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            </select>
+                            <button type="button" onclick="toggleNewMakerInput()" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shrink-0 transition" title="新しいメーカーを追加">
+                                ＋追加
+                            </button>
+                        </div>
+                        <div id="new-maker-box" class="hidden mt-1.5 flex space-x-1.5">
+                            <input type="text" id="new-maker-input" placeholder="新規メーカー名を入力" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMaker();}"
+                                class="w-full px-2.5 py-1.5 border border-emerald-400 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button type="button" onclick="addCustomMaker()" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shrink-0">
+                                登録
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">品番</label>
+                        <div class="flex space-x-1.5">
+                            <input type="text" id="item-code" placeholder="例: 10-1702" 
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();lookupProductInfo();}"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                            <button type="button" id="btn-lookup-product" onclick="lookupProductInfo()" 
+                                class="px-2.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 text-white rounded-lg text-xs font-semibold shrink-0 transition flex items-center space-x-1 shadow-sm" 
+                                title="メーカーと品番から品名・定価を検索して自動入力">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                                <span>検索</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">定価</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">¥</span>
+                            <input type="number" id="item-price" min="0" step="1" placeholder="15000" 
+                                class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+                <div id="lookup-status-bar" class="hidden text-xs px-3 py-2 rounded-lg border flex items-center justify-between gap-2"></div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">品名 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="item-name" required placeholder="例: E235系1000番台 横須賀・総武快速線 基本セット(4両)" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">セット名</label>
+                    <input type="text" id="item-set-name" placeholder="例: 横須賀・総武快速線 15両フル編成 / 基本＋増結A" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">種別</label>
+                        <select id="item-type" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="SL">SL</option>
+                            <option value="DL">DL</option>
+                            <option value="EL">EL</option>
+                            <option value="DC">DC</option>
+                            <option value="PC">PC</option>
+                            <option value="EC" selected>EC</option>
+                            <option value="FC">FC</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">形態</label>
+                        <select id="item-form-type" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="セット">セット</option>
+                            <option value="単品">単品</option>
+                            <option value="バラシ">バラシ</option>
+                            <option value="ASSY組立品">ASSY組立品</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">分類</label>
+                        <input type="text" id="item-category" placeholder="例: 通勤形, 特急形, 貨物" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">動力</label>
+                        <select id="item-motor" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="あり">あり</option>
+                            <option value="なし">なし</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">新旧</label>
+                        <select id="item-condition" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="新品">新品</option>
+                            <option value="中古品">中古品</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">BMT</label>
+                        <select id="item-bmt" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="付">付</option>
+                            <option value="未">未</option>
+                            <option value="-">-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Box No.</label>
+                        <input type="number" id="item-box-no" min="0" step="1" placeholder="例: 1" 
+                            class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">室内灯</label>
+                        <select id="item-interior-light" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="なし">なし</option>
+                            <option value="あり">あり</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">備考</label>
+                    <textarea id="item-notes" rows="2" placeholder="付属品の取付状況、室内灯、保管場所など自由に記述" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700">画像貼り付け・カメラ撮影</label>
+                    <div id="image-paste-zone" tabindex="0"
+                        class="border-2 border-dashed border-slate-300 hover:border-emerald-500 focus:border-emerald-500 focus:outline-none rounded-xl p-4 text-center bg-slate-50 transition">
+                        <input type="file" id="item-image-file" accept="image/*" class="hidden" onchange="handleImageFileSelect(event)">
+                        <input type="file" id="item-camera-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)">
+                        <div id="image-placeholder" class="space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('item-camera-file').click()"
+                                    class="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i data-lucide="camera" class="w-4 h-4"></i>
+                                    <span>カメラで撮影</span>
+                                </button>
+                                <button type="button" onclick="document.getElementById('item-image-file').click()"
+                                    class="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i data-lucide="image-plus" class="w-4 h-4"></i>
+                                    <span>画像を選択</span>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-500">またはこの枠を選択して <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px]">Ctrl+V</kbd> で貼り付け（自動リサイズ保存）</p>
+                        </div>
+                        <div id="image-preview-wrapper" class="hidden flex flex-col items-center space-y-2">
+                            <img id="image-preview" src="" alt="プレビュー" class="w-48 h-24 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('item-camera-file').click()" class="inline-flex items-center space-x-1 text-xs text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md shadow-sm">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                    <span>撮り直す</span>
+                                </button>
+                                <button type="button" onclick="clearItemImage(event)" class="inline-flex items-center space-x-1 text-xs text-rose-600 hover:text-rose-700 bg-white border border-rose-200 px-2.5 py-1 rounded-md shadow-sm">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>削除</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow-sm transition">
+                        保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- カスタム確認ダイアログ -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div class="flex items-center space-x-3 text-rose-600">
+                <div class="p-2 bg-rose-100 rounded-full">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 id="confirm-title" class="text-lg font-bold text-slate-900">確認</h3>
+            </div>
+            <p id="confirm-message" class="text-sm text-slate-600 leading-relaxed"></p>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium">
+                    キャンセル
+                </button>
+                <button id="confirm-exec-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-sm font-semibold">
+                    実行する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- パスワード変更モーダル -->
+    <div id="password-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 class="text-base font-bold flex items-center space-x-2">
+                    <i data-lucide="key-round" class="w-5 h-5 text-emerald-400"></i>
+                    <span>パスワードの変更</span>
+                </h3>
+                <button type="button" onclick="closePasswordModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="password-change-form" onsubmit="handlePasswordChange(event)" class="p-6 space-y-4">
+                <div id="pw-change-error" class="hidden bg-rose-50 border border-rose-200 text-rose-600 text-xs p-3 rounded-lg flex items-center space-x-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                    <span id="pw-change-error-msg">エラーメッセージ</span>
+                </div>
+
+                <div class="bg-slate-50 px-3.5 py-2 rounded-lg border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
+                    <span>対象アカウント:</span>
+                    <span id="pw-change-user" class="font-bold text-slate-800">admin</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">現在のパスワード</label>
+                    <input type="password" id="pw-current" required placeholder="現在のパスワードを入力"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">新しいパスワード（4文字以上）</label>
+                    <input type="password" id="pw-new" required minlength="4" placeholder="新しいパスワードを入力"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">新しいパスワード（確認用）</label>
+                    <input type="password" id="pw-new-confirm" required minlength="4" placeholder="もう一度新しいパスワードを入力"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closePasswordModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow-sm transition">
+                        変更を保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Googleマイドライブ連携・同期モーダル -->
+    <div id="gdrive-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden my-8">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 class="text-base font-bold flex items-center space-x-2">
+                    <i data-lucide="cloud" class="w-5 h-5 text-sky-400"></i>
+                    <span>Googleマイドライブ データ同期</span>
+                </h3>
+                <button type="button" onclick="closeGDriveModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
+                <!-- 接続ステータス -->
+                <div id="gdrive-status-card" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        <div id="gdrive-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></div>
+                        <div class="min-w-0">
+                            <p id="gdrive-status-title" class="text-xs font-bold text-slate-800">未接続（ローカル保存のみ）</p>
+                            <p id="gdrive-status-sub" class="text-[11px] text-slate-500 truncate">Googleドライブと連携するとPC・スマホ間で自動同期できます</p>
+                        </div>
+                    </div>
+                    <span id="gdrive-file-badge" class="hidden text-[10px] font-mono bg-sky-100 text-sky-800 px-2 py-0.5 rounded border border-sky-200 shrink-0">同期中</span>
+                </div>
+
+                <!-- Google OAuth クライアントID設定 -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-700">Google OAuth 2.0 クライアントID</label>
+                        <button type="button" onclick="toggleGDriveHelp()" class="text-[11px] text-sky-600 hover:text-sky-800 underline">取得・設定手順を見る</button>
+                    </div>
+                    <div class="flex space-x-1.5">
+                        <input type="text" id="gdrive-client-id" placeholder="例: 1234567890-xxxx.apps.googleusercontent.com"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white">
+                        <button type="button" onclick="saveGDriveClientId()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold shrink-0 transition">
+                            設定保存
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 手順ガイド（折りたたみ） -->
+                <div id="gdrive-help-box" class="hidden bg-sky-50/80 border border-sky-200 rounded-xl p-3.5 text-xs text-slate-700 space-y-2 leading-relaxed">
+                    <p class="font-bold text-sky-900 flex items-center space-x-1">
+                        <i data-lucide="info" class="w-4 h-4 text-sky-600"></i>
+                        <span>PC・スマホ両方でGoogleドライブ同期を使う手順</span>
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-[11px]">
+                        <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-sky-700 underline font-semibold">Google Cloud Console</a> でプロジェクトを作成し、<strong>「Google Drive API」</strong>を有効化します。</li>
+                        <li>「認証情報」→「OAuth クライアント ID（ウェブアプリケーション）」を作成し、アクセス元のURL（ローカルサーバーやホスティングURL）を「承認済みの JavaScript 生成元」に追加します。</li>
+                        <li>発行された<strong>クライアントID</strong>を上の欄に貼り付けて「設定保存」→「Googleアカウントで接続」を押すと、マイドライブ直下に <code class="bg-white px-1 rounded border">railway_inventory_data.json</code> が自動作成され、以降の変更も自動保存されます。</li>
+                    </ol>
+                </div>
+
+                <!-- Googleドライブ接続・同期アクション -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <button type="button" id="btn-gdrive-connect" onclick="connectGoogleDrive()"
+                        class="w-full py-2.5 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>Googleアカウントで接続</span>
+                    </button>
+                    <button type="button" id="btn-gdrive-disconnect" onclick="disconnectGoogleDrive()"
+                        class="hidden w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5">
+                        <i data-lucide="unplug" class="w-4 h-4"></i>
+                        <span>接続を解除</span>
+                    </button>
+                    <button type="button" id="btn-gdrive-pull" onclick="syncFromGoogleDrive(true)" disabled
+                        class="w-full py-2.5 px-3 bg-white hover:bg-slate-50 disabled:opacity-40 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-1.5">
+                        <i data-lucide="cloud-download" class="w-4 h-4 text-sky-600"></i>
+                        <span>ドライブから最新読込</span>
+                    </button>
+                    <button type="button" id="btn-gdrive-push" onclick="syncToGoogleDrive(true)" disabled
+                        class="sm:col-span-2 w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5">
+                        <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                        <span>今すぐマイドライブへ保存</span>
+                    </button>
+                </div>
+
+                <!-- 手動バックアップファイル（Googleドライブ手動配置用） -->
+                <div class="pt-3 border-t border-slate-200 space-y-2">
+                    <p class="text-[11px] font-bold text-slate-600">ファイル直接保存・読込（API設定なしでマイドライブに置く場合）</p>
+                    <p class="text-[11px] text-slate-500">JSONファイルとしてダウンロードしてGoogleドライブアプリに保存し、PC・スマホから読み込むこともできます。</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="exportBackupJSON()" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-1.5">
+                            <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                            <span>JSON保存</span>
+                        </button>
+                        <input type="file" id="json-backup-input" accept=".json" class="hidden" onchange="importBackupJSON(event)">
+                        <button type="button" onclick="document.getElementById('json-backup-input').click()" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-1.5">
+                            <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+                            <span>JSON読込</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center space-x-2.5 text-sm font-medium transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toast-message">保存しました</span>
+    </div>
+
+    </div><!-- /#app-wrapper -->
+
+    <script>
+        const USERS_STORAGE_KEY = 'model_railway_users_v1';
+        const SESSION_STORAGE_KEY = 'model_railway_session_v1';
+        const GDRIVE_CLIENT_ID_KEY = 'model_railway_gdrive_client_id_v1';
+        const GDRIVE_FILE_NAME = 'railway_inventory_data.json';
+        const DEFAULT_MAKERS = ['KATO', 'TOMIX', 'マイクロエース', 'グリーンマックス', 'ポポンデッタ', '鉄道コレクション', '天賞堂', 'その他'];
+        let customMakers = [];
+        let currentUser = null;
+        let authMode = 'login';
+        let currentImageBase64 = '';
+        let inventory = [];
+
+        // Google Drive API 同期状態
+        let gdriveTokenClient = null;
+        let gdriveAccessToken = null;
+        let gdriveFileId = null;
+        let gdriveSyncTimer = null;
+
+        function getStorageKey() {
+            return `model_railway_inventory_v2_${currentUser || 'default'}`;
+        }
+
+        function getMakersStorageKey() {
+            return `model_railway_makers_v1_${currentUser || 'default'}`;
+        }
+
+        // サンプル初期データ
+        const sampleData = [
+            {
+                id: 'sample-1',
+                regNumber: 'REG-0001',
+                maker: 'KATO',
+                code: '10-1702',
+                name: 'E235系1000番台 横須賀・総武快速線 基本セット(4両)',
+                setName: '横須賀・総武快速線 15両編成',
+                price: 15400,
+                type: 'EC',
+                formType: 'セット',
+                category: 'JR東日本・通勤近郊形',
+                motor: 'あり',
+                duplicateNo: 1,
+                condition: '新品',
+                bmt: '付',
+                boxNo: 1,
+                interiorLight: 'あり',
+                date: '2026-01-15',
+                notes: '電連パーツ取付済・純正室内灯クリア装備',
+                image: ''
+            },
+            {
+                id: 'sample-2',
+                regNumber: 'REG-0002',
+                maker: 'TOMIX',
+                code: '7169',
+                name: 'JR EF64-1000形電気機関車(後期型・復活国鉄色)',
+                setName: '',
+                price: 8580,
+                type: 'EL',
+                formType: '単品',
+                category: 'JR貨物・直流電気機関車',
+                motor: 'あり',
+                duplicateNo: 1,
+                condition: '新品',
+                bmt: '付',
+                boxNo: 2,
+                interiorLight: 'なし',
+                date: '2026-02-03',
+                notes: 'ナンバー1028号機選択・TNカプラー交換済',
+                image: ''
+            },
+            {
+                id: 'sample-3',
+                regNumber: 'REG-0003',
+                maker: 'KATO',
+                code: '2016-9',
+                name: 'D51 標準形',
+                setName: '',
+                price: 13750,
+                type: 'SL',
+                formType: '単品',
+                category: '国鉄・蒸気機関車',
+                motor: 'あり',
+                duplicateNo: 1,
+                condition: '中古品',
+                bmt: '-',
+                boxNo: 2,
+                interiorLight: 'なし',
+                date: '2026-02-20',
+                notes: 'コアレスモーター搭載・走行快調',
+                image: ''
+            },
+            {
+                id: 'sample-4',
+                regNumber: 'REG-0004',
+                maker: 'TOMIX',
+                code: '98831',
+                name: 'JR 205系通勤電車(埼京・川越線) 増結用バラシ サハ204',
+                setName: '埼京・川越線 10両編成',
+                price: 2200,
+                type: 'EC',
+                formType: 'バラシ',
+                category: 'JR東日本・6扉車',
+                motor: 'なし',
+                duplicateNo: 1,
+                condition: '中古品',
+                bmt: '未',
+                boxNo: 3,
+                interiorLight: 'なし',
+                date: '2026-03-10',
+                notes: '車番インレタ未貼付',
+                image: ''
+            }
+        ];
+
+        // 初期化処理
+        window.addEventListener('DOMContentLoaded', () => {
+            initUsers();
+            renderMakerOptions();
+            initGDriveUI();
+            checkAuthSession();
+            setupImagePasteListener();
+            refreshIcons();
+        });
+
+        // ユーザー管理初期化
+        function initUsers() {
+            const stored = localStorage.getItem(USERS_STORAGE_KEY);
+            if (!stored) {
+                const defaultUsers = { 'admin': '1234' };
+                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+            }
+        }
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            const loginTab = document.getElementById('tab-login');
+            const regTab = document.getElementById('tab-register');
+            const confirmGroup = document.getElementById('auth-confirm-group');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const errorBox = document.getElementById('auth-error');
+
+            errorBox.classList.add('hidden');
+
+            if (mode === 'login') {
+                loginTab.className = 'py-3 text-emerald-600 border-b-2 border-emerald-600 bg-white transition';
+                regTab.className = 'py-3 text-slate-500 hover:text-slate-800 transition';
+                confirmGroup.classList.add('hidden');
+                document.getElementById('auth-password-confirm').required = false;
+                submitBtn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i><span>ログイン</span>';
+            } else {
+                regTab.className = 'py-3 text-emerald-600 border-b-2 border-emerald-600 bg-white transition';
+                loginTab.className = 'py-3 text-slate-500 hover:text-slate-800 transition';
+                confirmGroup.classList.remove('hidden');
+                document.getElementById('auth-password-confirm').required = true;
+                submitBtn.innerHTML = '<i data-lucide="user-plus" class="w-4 h-4"></i><span>アカウントを作成してログイン</span>';
+            }
+            refreshIcons();
+        }
+
+        function fillDemoAccount() {
+            switchAuthTab('login');
+            document.getElementById('auth-username').value = 'admin';
+            document.getElementById('auth-password').value = '1234';
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const confirmPassword = document.getElementById('auth-password-confirm').value;
+            const errorBox = document.getElementById('auth-error');
+            const errorMsg = document.getElementById('auth-error-msg');
+
+            let users = {};
+            try {
+                users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY)) || {};
+            } catch {
+                users = { 'admin': '1234' };
+            }
+
+            if (authMode === 'login') {
+                if (users[username] && users[username] === password) {
+                    errorBox.classList.add('hidden');
+                    completeLogin(username);
+                } else {
+                    errorMsg.textContent = 'アカウントIDまたはパスワードが正しくありません。';
+                    errorBox.classList.remove('hidden');
+                }
+            } else {
+                if (users[username]) {
+                    errorMsg.textContent = 'このユーザーアカウントは既に登録されています。';
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    errorMsg.textContent = '確認用パスワードが一致しません。';
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+                users[username] = password;
+                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+                errorBox.classList.add('hidden');
+                completeLogin(username);
+                showToast(`アカウント「${username}」を作成しました`);
+            }
+        }
+
+        function completeLogin(username) {
+            currentUser = username;
+            sessionStorage.setItem(SESSION_STORAGE_KEY, username);
+            document.getElementById('current-user-display').textContent = username;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-wrapper').classList.remove('hidden');
+            loadData();
+            refreshIcons();
+        }
+
+        function checkAuthSession() {
+            const savedUser = sessionStorage.getItem(SESSION_STORAGE_KEY);
+            if (savedUser) {
+                completeLogin(savedUser);
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-wrapper').classList.add('hidden');
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem(SESSION_STORAGE_KEY);
+            currentUser = null;
+            gdriveAccessToken = null;
+            gdriveFileId = null;
+            updateGDriveStatusUI();
+            document.getElementById('auth-form').reset();
+            document.getElementById('auth-error').classList.add('hidden');
+            document.getElementById('app-wrapper').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            switchAuthTab('login');
+        }
+
+        // パスワード変更モーダル制御
+        function openPasswordModal() {
+            if (!currentUser) return;
+            document.getElementById('password-change-form').reset();
+            document.getElementById('pw-change-error').classList.add('hidden');
+            document.getElementById('pw-change-user').textContent = currentUser;
+            document.getElementById('password-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+        }
+
+        function handlePasswordChange(e) {
+            e.preventDefault();
+            const currentPw = document.getElementById('pw-current').value;
+            const newPw = document.getElementById('pw-new').value;
+            const confirmPw = document.getElementById('pw-new-confirm').value;
+            const errorBox = document.getElementById('pw-change-error');
+            const errorMsg = document.getElementById('pw-change-error-msg');
+
+            let users = {};
+            try {
+                users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY)) || {};
+            } catch {
+                users = { 'admin': '1234' };
+            }
+
+            if (!users[currentUser] || users[currentUser] !== currentPw) {
+                errorMsg.textContent = '現在のパスワードが正しくありません。';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+            if (newPw.length < 4) {
+                errorMsg.textContent = '新しいパスワードは4文字以上で入力してください。';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+            if (newPw !== confirmPw) {
+                errorMsg.textContent = '新しいパスワード（確認用）が一致しません。';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            users[currentUser] = newPw;
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+            errorBox.classList.add('hidden');
+            closePasswordModal();
+            showToast('パスワードを変更しました');
+        }
+
+        // メーカー管理
+        function getAllMakers() {
+            const set = new Set([...DEFAULT_MAKERS, ...customMakers]);
+            inventory.forEach(item => {
+                if (item.maker && item.maker.trim()) {
+                    set.add(item.maker.trim());
+                }
+            });
+            const list = Array.from(set);
+            const othersIdx = list.indexOf('その他');
+            if (othersIdx !== -1) {
+                list.splice(othersIdx, 1);
+                list.push('その他');
+            }
+            return list;
+        }
+
+        function loadCustomMakers() {
+            try {
+                const stored = localStorage.getItem(getMakersStorageKey());
+                customMakers = stored ? JSON.parse(stored) : [];
+            } catch {
+                customMakers = [];
+            }
+            renderMakerOptions();
+        }
+
+        function saveCustomMakers() {
+            try {
+                localStorage.setItem(getMakersStorageKey(), JSON.stringify(customMakers));
+            } catch (e) {
+                console.error(e);
+            }
+            renderMakerOptions();
+        }
+
+        function renderMakerOptions(selectedMaker = null) {
+            const makers = getAllMakers();
+            const itemSelect = document.getElementById('item-maker');
+            const filterSelect = document.getElementById('filter-maker');
+
+            const currentItemVal = selectedMaker || (itemSelect ? itemSelect.value : 'KATO');
+            const currentFilterVal = filterSelect ? filterSelect.value : 'ALL';
+
+            if (itemSelect) {
+                itemSelect.innerHTML = makers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (makers.includes(currentItemVal)) {
+                    itemSelect.value = currentItemVal;
+                }
+            }
+
+            if (filterSelect) {
+                filterSelect.innerHTML = '<option value="ALL">すべてのメーカー</option>' +
+                    makers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (currentFilterVal === 'ALL' || makers.includes(currentFilterVal)) {
+                    filterSelect.value = currentFilterVal;
+                } else {
+                    filterSelect.value = 'ALL';
+                }
+            }
+        }
+
+        function toggleNewMakerInput() {
+            const box = document.getElementById('new-maker-box');
+            const input = document.getElementById('new-maker-input');
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function addCustomMaker() {
+            const input = document.getElementById('new-maker-input');
+            const newName = input.value.trim();
+            if (!newName) {
+                showToast('メーカー名を入力してください');
+                return;
+            }
+            const existing = getAllMakers();
+            if (!existing.includes(newName)) {
+                customMakers.push(newName);
+                saveCustomMakers();
+                showToast(`メーカー「${newName}」を追加しました`);
+            } else {
+                showToast(`メーカー「${newName}」は既に登録されています`);
+            }
+            renderMakerOptions(newName);
+            document.getElementById('new-maker-box').classList.add('hidden');
+            input.value = '';
+        }
+
+        // 自動登録番号採番 (REG-0001形式)
+        function generateNextRegNumber() {
+            let maxNum = 0;
+            inventory.forEach(item => {
+                if (item.regNumber) {
+                    const match = String(item.regNumber).match(/(\d+)$/);
+                    if (match) {
+                        const num = parseInt(match[1], 10);
+                        if (num > maxNum) maxNum = num;
+                    }
+                }
+            });
+            return 'REG-' + String(maxNum + 1).padStart(4, '0');
+        }
+
+        // 画像処理・貼り付け
+        function setupImagePasteListener() {
+            document.addEventListener('paste', (e) => {
+                const modal = document.getElementById('item-modal');
+                if (modal.classList.contains('hidden')) return;
+
+                const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+                if (!items) return;
+
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const file = items[i].getAsFile();
+                        if (file) {
+                            processImageFile(file);
+                            showToast('クリップボードから画像を貼り付けました');
+                            e.preventDefault();
+                        }
+                        break;
+                    }
+                }
+            });
+        }
+
+        function handleImageFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processImageFile(file);
+            }
+        }
+
+        function processImageFile(file) {
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 360;
+                    const MAX_HEIGHT = 180;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height = Math.round(height * (MAX_WIDTH / width));
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width = Math.round(width * (MAX_HEIGHT / height));
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    currentImageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    updateImagePreviewUI();
+                } finally {
+                    URL.revokeObjectURL(objectUrl);
+                }
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                showToast('画像の読み込みに失敗しました');
+            };
+            img.src = objectUrl;
+        }
+
+        function updateImagePreviewUI() {
+            const placeholder = document.getElementById('image-placeholder');
+            const previewWrapper = document.getElementById('image-preview-wrapper');
+            const previewImg = document.getElementById('image-preview');
+
+            if (currentImageBase64) {
+                previewImg.src = currentImageBase64;
+                placeholder.classList.add('hidden');
+                previewWrapper.classList.remove('hidden');
+            } else {
+                previewImg.src = '';
+                placeholder.classList.remove('hidden');
+                previewWrapper.classList.add('hidden');
+            }
+            refreshIcons();
+        }
+
+        function clearItemImage(e) {
+            if (e) e.stopPropagation();
+            currentImageBase64 = '';
+            document.getElementById('item-image-file').value = '';
+            const cameraInput = document.getElementById('item-camera-file');
+            if (cameraInput) cameraInput.value = '';
+            updateImagePreviewUI();
+        }
+
+        // データ読み込み・保存
+        function loadData() {
+            loadCustomMakers();
+            const stored = localStorage.getItem(getStorageKey());
+            if (stored) {
+                try {
+                    inventory = JSON.parse(stored);
+                } catch (e) {
+                    console.error('データの解析に失敗しました', e);
+                    inventory = [...sampleData];
+                }
+            } else {
+                inventory = [...sampleData];
+                saveData();
+            }
+            renderMakerOptions();
+            renderBoxOptions();
+            updateDashboard();
+            renderList();
+        }
+
+        function saveData(skipCloudSync = false) {
+            try {
+                localStorage.setItem(getStorageKey(), JSON.stringify(inventory));
+            } catch (e) {
+                showToast('保存容量の上限に達しました。画像サイズを減らしてください。');
+                console.error(e);
+            }
+            renderMakerOptions();
+            renderBoxOptions();
+            updateDashboard();
+            renderList();
+
+            if (!skipCloudSync && gdriveAccessToken) {
+                scheduleGDriveAutoSync();
+            }
+        }
+
+        // Box No.フィルター選択肢の動的生成
+        function renderBoxOptions() {
+            const boxSelect = document.getElementById('filter-box');
+            if (!boxSelect) return;
+
+            const currentVal = boxSelect.value || 'ALL';
+            const boxSet = new Set();
+            let hasUnassigned = false;
+
+            inventory.forEach(item => {
+                if (item.boxNo !== '' && item.boxNo !== undefined && item.boxNo !== null && !isNaN(Number(item.boxNo))) {
+                    boxSet.add(Number(item.boxNo));
+                } else {
+                    hasUnassigned = true;
+                }
+            });
+
+            const sortedBoxes = Array.from(boxSet).sort((a, b) => a - b);
+            let optionsHtml = '<option value="ALL">すべてのBox No.</option>';
+            sortedBoxes.forEach(num => {
+                optionsHtml += `<option value="${num}">Box ${num}</option>`;
+            });
+            if (hasUnassigned) {
+                optionsHtml += '<option value="NONE">Box 未設定</option>';
+            }
+
+            boxSelect.innerHTML = optionsHtml;
+            if (currentVal === 'ALL' || currentVal === 'NONE' || sortedBoxes.includes(Number(currentVal))) {
+                boxSelect.value = currentVal;
+            } else {
+                boxSelect.value = 'ALL';
+            }
+        }
+
+        // ダッシュボード集計更新
+        function updateDashboard() {
+            const totalItems = inventory.length;
+            const motorItems = inventory.filter(item => item.motor === 'あり').length;
+            const maxBoxNo = inventory.reduce((max, item) => {
+                const val = Number(item.boxNo);
+                return (!isNaN(val) && item.boxNo !== '' && item.boxNo !== null && val > max) ? val : max;
+            }, 0);
+            const totalValue = inventory.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+
+            document.getElementById('stat-total-sets').textContent = totalItems.toLocaleString();
+            document.getElementById('stat-motor-cars').textContent = motorItems.toLocaleString();
+            document.getElementById('stat-max-box').textContent = maxBoxNo.toLocaleString();
+            document.getElementById('stat-total-value').textContent = '¥' + totalValue.toLocaleString();
+
+            const types = ['SL', 'DL', 'EL', 'DC', 'PC', 'EC', 'FC'];
+            types.forEach(t => {
+                const count = inventory.filter(item => item.type === t).length;
+                const el = document.getElementById(`stat-type-${t}`);
+                if (el) el.textContent = count.toLocaleString();
+            });
+        }
+
+        // 一覧レンダリング
+        function renderList() {
+            const search = document.getElementById('filter-search').value.toLowerCase().trim();
+            const maker = document.getElementById('filter-maker').value;
+            const type = document.getElementById('filter-type').value;
+            const formType = document.getElementById('filter-form').value;
+            const boxFilter = document.getElementById('filter-box').value;
+            const onlyMotor = document.getElementById('filter-motor').checked;
+            const onlyLight = document.getElementById('filter-light').checked;
+            const onlyBmt = document.getElementById('filter-bmt').checked;
+            const onlyNew = document.getElementById('filter-new').checked;
+            const sortBy = document.getElementById('sort-by').value;
+
+            let filtered = inventory.filter(item => {
+                if (search) {
+                    const target = `${item.regNumber || ''} ${item.name || ''} ${item.setName || ''} ${item.code || ''} ${item.maker || ''} ${item.category || ''} ${item.notes || ''}`.toLowerCase();
+                    if (!target.includes(search)) return false;
+                }
+                if (maker !== 'ALL' && item.maker !== maker) return false;
+                if (type !== 'ALL' && item.type !== type) return false;
+                if (formType !== 'ALL' && item.formType !== formType) return false;
+                if (boxFilter !== 'ALL') {
+                    const hasBox = item.boxNo !== '' && item.boxNo !== undefined && item.boxNo !== null;
+                    if (boxFilter === 'NONE') {
+                        if (hasBox) return false;
+                    } else {
+                        if (!hasBox || Number(item.boxNo) !== Number(boxFilter)) return false;
+                    }
+                }
+                if (onlyMotor && item.motor !== 'あり') return false;
+                if (onlyLight && item.interiorLight !== 'あり') return false;
+                if (onlyBmt && item.bmt !== '付') return false;
+                if (onlyNew && item.condition !== '新品') return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'newest') return (b.regNumber || '').localeCompare(a.regNumber || '');
+                if (sortBy === 'oldest') return (a.regNumber || '').localeCompare(b.regNumber || '');
+                if (sortBy === 'box_asc') {
+                    const boxA = (a.boxNo !== '' && a.boxNo !== undefined && a.boxNo !== null) ? Number(a.boxNo) : 999999;
+                    const boxB = (b.boxNo !== '' && b.boxNo !== undefined && b.boxNo !== null) ? Number(b.boxNo) : 999999;
+                    return boxA - boxB;
+                }
+                if (sortBy === 'maker') return (a.maker || '').localeCompare(b.maker || '');
+                if (sortBy === 'price_desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
+                return 0;
+            });
+
+            document.getElementById('filtered-count').textContent = `${filtered.length}件`;
+            const grid = document.getElementById('inventory-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(item => {
+                const conditionBadge = item.condition === '新品'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-100 text-amber-800 border-amber-200';
+
+                const bmtBadge = item.bmt === '付'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : item.bmt === '未'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-slate-100 text-slate-500 border-slate-200';
+
+                const hasBoxNo = item.boxNo !== '' && item.boxNo !== undefined && item.boxNo !== null;
+
+                return `
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow transition flex flex-col justify-between overflow-hidden">
+                    <div class="p-2.5 space-y-1.5">
+                        <div class="flex items-center justify-between gap-1">
+                            <div class="flex flex-wrap items-center gap-1">
+                                <span class="text-[11px] font-mono font-bold px-1.5 py-0.2 bg-slate-800 text-white rounded">${escapeHTML(item.regNumber || '-')}</span>
+                                <span class="text-[11px] font-bold px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">${escapeHTML(item.type || '-')}</span>
+                                <span class="text-[11px] font-semibold px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded">${escapeHTML(item.formType || '-')}</span>
+                                ${hasBoxNo ? `<span class="text-[11px] font-bold px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">Box ${escapeHTML(item.boxNo)}</span>` : ''}
+                                ${Number(item.duplicateNo) > 1 ? `<span class="text-[11px] font-bold px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded">#${item.duplicateNo}</span>` : ''}
+                            </div>
+                            <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded border shrink-0 ${conditionBadge}">${escapeHTML(item.condition || '新品')}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[11px] text-slate-500 font-medium truncate">
+                                    <span class="text-slate-700 font-semibold">${escapeHTML(item.maker)}</span>
+                                    ${item.code ? `<span class="ml-1 font-mono text-[10px] bg-slate-100 px-1 py-0.2 rounded">${escapeHTML(item.code)}</span>` : ''}
+                                    ${item.category ? `<span class="ml-1 text-slate-400">/ ${escapeHTML(item.category)}</span>` : ''}
+                                </div>
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-800 leading-snug truncate mt-0.5" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</h3>
+                                ${item.setName ? `<p class="text-[11px] text-indigo-600 font-medium truncate mt-0.2" title="セット名: ${escapeHTML(item.setName)}">セット: ${escapeHTML(item.setName)}</p>` : ''}
+                            </div>
+                            ${item.image ? `
+                            <div class="w-24 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                <img src="${item.image}" alt="${escapeHTML(item.name)}" class="w-full h-full object-cover">
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600 pt-1 border-t border-slate-100">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">動力:</span>
+                                <span class="font-semibold ${item.motor === 'あり' ? 'text-amber-600' : 'text-slate-500'}">${escapeHTML(item.motor || 'なし')}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">室内灯:</span>
+                                <span class="font-semibold ${item.interiorLight === 'あり' ? 'text-sky-600' : 'text-slate-500'}">${escapeHTML(item.interiorLight || 'なし')}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">BMT:</span>
+                                <span class="font-semibold px-1 py-0 rounded border text-[10px] ${bmtBadge}">${escapeHTML(item.bmt || '-')}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">定価:</span>
+                                <span class="font-semibold text-slate-800">${item.price ? '¥' + Number(item.price).toLocaleString() : '-'}</span>
+                            </div>
+                        </div>
+
+                        ${item.notes ? `<p class="text-[11px] text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 truncate" title="${escapeHTML(item.notes)}">${escapeHTML(item.notes)}</p>` : ''}
+                    </div>
+
+                    <div class="bg-slate-50 px-2.5 py-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400">登録: ${item.date || '-'}</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="editItem('${item.id}')" class="text-slate-600 hover:text-emerald-600 font-medium flex items-center space-x-0.5 transition">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                <span>編集</span>
+                            </button>
+                            <button onclick="confirmDeleteItem('${item.id}')" class="text-slate-400 hover:text-rose-600 font-medium flex items-center space-x-0.5 transition">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                <span>削除</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+        }
+
+        // フィルターリセット
+        function resetFilters() {
+            document.getElementById('filter-search').value = '';
+            document.getElementById('filter-maker').value = 'ALL';
+            document.getElementById('filter-type').value = 'ALL';
+            document.getElementById('filter-form').value = 'ALL';
+            document.getElementById('filter-box').value = 'ALL';
+            document.getElementById('filter-motor').checked = false;
+            document.getElementById('filter-light').checked = false;
+            document.getElementById('filter-bmt').checked = false;
+            document.getElementById('filter-new').checked = false;
+            renderList();
+        }
+
+        // モーダル操作（新規登録）
+        function openModal() {
+            document.getElementById('item-form').reset();
+            document.getElementById('item-id').value = '';
+            document.getElementById('item-reg-number').value = generateNextRegNumber();
+            document.getElementById('item-duplicate-no').value = 1;
+            document.getElementById('item-date').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('item-code').value = '';
+            document.getElementById('item-price').value = '';
+            document.getElementById('item-name').value = '';
+            document.getElementById('item-set-name').value = '';
+            document.getElementById('item-type').value = 'EC';
+            document.getElementById('item-form-type').value = 'セット';
+            document.getElementById('item-category').value = '';
+            document.getElementById('item-motor').value = 'あり';
+            document.getElementById('item-condition').value = '新品';
+            document.getElementById('item-bmt').value = '付';
+            document.getElementById('item-box-no').value = '';
+            document.getElementById('item-interior-light').value = 'なし';
+            renderMakerOptions('KATO');
+            document.getElementById('new-maker-box').classList.add('hidden');
+            hideLookupStatus();
+            clearItemImage();
+
+            document.getElementById('modal-title').innerHTML = `
+                <i data-lucide="train-front" class="w-5 h-5 text-emerald-400"></i>
+                <span>新規登録</span>
+            `;
+            document.getElementById('item-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('item-modal').classList.add('hidden');
+        }
+
+        // 編集モーダルを開く
+        function editItem(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('item-id').value = item.id;
+            document.getElementById('item-reg-number').value = item.regNumber || generateNextRegNumber();
+            document.getElementById('item-duplicate-no').value = item.duplicateNo || 1;
+            document.getElementById('item-date').value = item.date || '';
+            renderMakerOptions(item.maker || 'KATO');
+            document.getElementById('new-maker-box').classList.add('hidden');
+            document.getElementById('item-code').value = item.code || '';
+            document.getElementById('item-price').value = item.price || '';
+            document.getElementById('item-name').value = item.name || '';
+            document.getElementById('item-set-name').value = item.setName || '';
+            document.getElementById('item-type').value = item.type || 'EC';
+            document.getElementById('item-form-type').value = item.formType || 'セット';
+            document.getElementById('item-category').value = item.category || '';
+            document.getElementById('item-motor').value = item.motor || 'あり';
+            document.getElementById('item-condition').value = item.condition || '新品';
+            document.getElementById('item-bmt').value = item.bmt || '-';
+            document.getElementById('item-box-no').value = item.boxNo !== undefined && item.boxNo !== null ? item.boxNo : '';
+            document.getElementById('item-interior-light').value = item.interiorLight || 'なし';
+            document.getElementById('item-notes').value = item.notes || '';
+            hideLookupStatus();
+
+            currentImageBase64 = item.image || '';
+            updateImagePreviewUI();
+
+            document.getElementById('modal-title').innerHTML = `
+                <i data-lucide="edit-3" class="w-5 h-5 text-emerald-400"></i>
+                <span>車両情報の編集 (${escapeHTML(item.regNumber || '')})</span>
+            `;
+            document.getElementById('item-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        // 登録・更新保存
+        function saveItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('item-id').value;
+            const boxVal = document.getElementById('item-box-no').value;
+
+            const itemData = {
+                id: id || 'item-' + Date.now(),
+                regNumber: document.getElementById('item-reg-number').value || generateNextRegNumber(),
+                duplicateNo: parseInt(document.getElementById('item-duplicate-no').value, 10) || 1,
+                date: document.getElementById('item-date').value,
+                maker: document.getElementById('item-maker').value,
+                code: document.getElementById('item-code').value.trim(),
+                price: document.getElementById('item-price').value ? Number(document.getElementById('item-price').value) : 0,
+                name: document.getElementById('item-name').value.trim(),
+                setName: document.getElementById('item-set-name').value.trim(),
+                type: document.getElementById('item-type').value,
+                formType: document.getElementById('item-form-type').value,
+                category: document.getElementById('item-category').value.trim(),
+                motor: document.getElementById('item-motor').value,
+                condition: document.getElementById('item-condition').value,
+                bmt: document.getElementById('item-bmt').value,
+                boxNo: boxVal !== '' ? Number(boxVal) : '',
+                interiorLight: document.getElementById('item-interior-light').value,
+                notes: document.getElementById('item-notes').value.trim(),
+                image: currentImageBase64
+            };
+
+            if (id) {
+                const index = inventory.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    inventory[index] = itemData;
+                    showToast('車両情報を更新しました');
+                }
+            } else {
+                inventory.unshift(itemData);
+                showToast(`新規登録しました (${itemData.regNumber})`);
+            }
+
+            saveData();
+            closeModal();
+        }
+
+        // 削除確認
+        function confirmDeleteItem(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+
+            openConfirmModal(
+                '車両データの削除',
+                `「${item.regNumber || ''} ${item.name}」を一覧から削除してもよろしいですか？`,
+                () => {
+                    inventory = inventory.filter(i => i.id !== id);
+                    saveData();
+                    showToast('車両データを削除しました');
+                }
+            );
+        }
+
+        // サンプルデータ再読込・全初期化
+        function loadSampleData() {
+            openConfirmModal(
+                'サンプルデータの読込',
+                '現在の登録データにサンプルデータを追加読込しますか？（既存データは保持されます）',
+                () => {
+                    const existingRegs = new Set(inventory.map(i => i.regNumber));
+                    sampleData.forEach((sample, idx) => {
+                        const reg = existingRegs.has(sample.regNumber) ? generateNextRegNumber() : sample.regNumber;
+                        inventory.push({
+                            ...sample,
+                            id: 'sample-' + Date.now() + '-' + idx,
+                            regNumber: reg
+                        });
+                    });
+                    saveData();
+                    showToast('サンプルデータを読み込みました');
+                }
+            );
+        }
+
+        function confirmClearAll() {
+            openConfirmModal(
+                '全データの初期化',
+                '保存されているすべての車両在庫データを削除して空にします。この操作は元に戻せません。',
+                () => {
+                    inventory = [];
+                    saveData();
+                    showToast('すべてのデータを初期化しました');
+                }
+            );
+        }
+
+        // 確認モーダル制御
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            const execBtn = document.getElementById('confirm-exec-btn');
+            execBtn.onclick = () => {
+                onConfirm();
+                closeConfirmModal();
+            };
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        // トースト通知
+        let toastTimer = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // CSVエクスポート
+        function exportCSV() {
+            if (inventory.length === 0) {
+                showToast('エクスポートするデータがありません');
+                return;
+            }
+            const headers = ['登録番号', 'メーカー', '品番', '品名', 'セット名', '定価', '種別', '形態', '分類', '動力', '同一商品番号', '新旧', 'BMT', 'Box No.', '室内灯', '登録日', '備考'];
+            const escapeCSV = (val) => {
+                const str = val === null || val === undefined ? '' : String(val);
+                if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            };
+
+            const rows = inventory.map(item => [
+                item.regNumber || '',
+                item.maker || '',
+                item.code || '',
+                item.name || '',
+                item.setName || '',
+                item.price || 0,
+                item.type || '',
+                item.formType || '',
+                item.category || '',
+                item.motor || '',
+                item.duplicateNo || 1,
+                item.condition || '',
+                item.bmt || '',
+                item.boxNo !== undefined && item.boxNo !== null ? item.boxNo : '',
+                item.interiorLight || 'なし',
+                item.date || '',
+                item.notes || ''
+            ].map(escapeCSV).join(','));
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const today = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `railway_inventory_${currentUser || 'export'}_${today}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`CSVをエクスポートしました (${inventory.length}件)`);
+        }
+
+        // CSVパーサー
+        function parseCSVText(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentVal = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (inQuotes) {
+                    if (char === '"' && nextChar === '"') {
+                        currentVal += '"';
+                        i++;
+                    } else if (char === '"') {
+                        inQuotes = false;
+                    } else {
+                        currentVal += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === ',') {
+                        currentRow.push(currentVal);
+                        currentVal = '';
+                    } else if (char === '\r' && nextChar === '\n') {
+                        currentRow.push(currentVal);
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentVal = '';
+                        i++;
+                    } else if (char === '\n' || char === '\r') {
+                        currentRow.push(currentVal);
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentVal = '';
+                    } else {
+                        currentVal += char;
+                    }
+                }
+            }
+            if (currentVal !== '' || currentRow.length > 0) {
+                currentRow.push(currentVal);
+                rows.push(currentRow);
+            }
+            return rows.filter(r => r.some(cell => cell.trim() !== ''));
+        }
+
+        // CSVインポート
+        function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    let content = e.target.result;
+                    if (content.charCodeAt(0) === 0xFEFF) {
+                        content = content.slice(1);
+                    }
+                    const rows = parseCSVText(content);
+                    if (rows.length < 2) {
+                        showToast('インポートできるデータ行が見つかりません');
+                        return;
+                    }
+
+                    const header = rows[0].map(h => h.trim());
+                    const hasSetNameCol = header.includes('セット名');
+                    const hasBoxCol = header.includes('Box No.');
+                    let importedCount = 0;
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const cols = rows[i];
+                        if (cols.length < 4) continue;
+
+                        const regNumber = (cols[0] || '').trim() || generateNextRegNumber();
+                        const maker = (cols[1] || '').trim() || 'その他';
+                        const code = (cols[2] || '').trim();
+                        const name = (cols[3] || '').trim();
+                        if (!name) continue;
+
+                        const offset = (hasSetNameCol || cols.length >= 17) ? 1 : 0;
+                        const setName = offset === 1 ? (cols[4] || '').trim() : '';
+                        const price = parseInt(String(cols[4 + offset] || '0').replace(/[^\d]/g, ''), 10) || 0;
+                        const type = (cols[5 + offset] || '').trim() || 'EC';
+                        const formType = (cols[6 + offset] || '').trim() || 'セット';
+                        const category = (cols[7 + offset] || '').trim();
+                        const motor = (cols[8 + offset] || '').trim() === 'あり' ? 'あり' : 'なし';
+                        const duplicateNo = parseInt(cols[9 + offset], 10) || 1;
+                        const condition = (cols[10 + offset] || '').trim() === '中古品' ? '中古品' : '新品';
+                        const bmt = ['付', '未', '-'].includes((cols[11 + offset] || '').trim()) ? cols[11 + offset].trim() : '-';
+
+                        let boxNo = '';
+                        let interiorLight = 'なし';
+                        let date = new Date().toISOString().slice(0, 10);
+                        let notes = '';
+
+                        if (hasBoxCol || cols.length >= 16 + offset) {
+                            const rawBox = (cols[12 + offset] || '').trim();
+                            boxNo = rawBox !== '' && !isNaN(Number(rawBox)) ? Number(rawBox) : '';
+                            interiorLight = (cols[13 + offset] || '').trim() === 'あり' ? 'あり' : 'なし';
+                            date = (cols[14 + offset] || '').trim() || date;
+                            notes = (cols[15 + offset] || '').trim();
+                        } else {
+                            date = (cols[12 + offset] || '').trim() || date;
+                            notes = (cols[13 + offset] || '').trim();
+                        }
+
+                        inventory.unshift({
+                            id: 'csv-' + Date.now() + '-' + i,
+                            regNumber,
+                            maker,
+                            code,
+                            name,
+                            setName,
+                            price,
+                            type,
+                            formType,
+                            category,
+                            motor,
+                            duplicateNo,
+                            condition,
+                            bmt,
+                            boxNo,
+                            interiorLight,
+                            date,
+                            notes,
+                            image: ''
+                        });
+                        importedCount++;
+                    }
+
+                    saveData();
+                    showToast(`${importedCount}件のデータをCSVからインポートしました`);
+                } catch (err) {
+                    console.error(err);
+                    showToast('CSVの読み込み中にエラーが発生しました');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // XSS対策エスケープ
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // 品番検索ステータス表示制御
+        function showLookupStatus(type, htmlContent) {
+            const bar = document.getElementById('lookup-status-bar');
+            if (!bar) return;
+            bar.classList.remove('hidden', 'bg-blue-50', 'border-blue-200', 'text-blue-700', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-700', 'bg-amber-50', 'border-amber-200', 'text-amber-700', 'bg-rose-50', 'border-rose-200', 'text-rose-700');
+            if (type === 'loading') {
+                bar.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-700');
+            } else if (type === 'success') {
+                bar.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-700');
+            } else if (type === 'warn') {
+                bar.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-700');
+            } else {
+                bar.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-700');
+            }
+            bar.innerHTML = htmlContent;
+        }
+
+        function hideLookupStatus() {
+            const bar = document.getElementById('lookup-status-bar');
+            if (bar) {
+                bar.classList.add('hidden');
+                bar.innerHTML = '';
+            }
+        }
+
+        // メーカーと品番から品名・定価を検索して自動入力
+        async function lookupProductInfo() {
+            const maker = document.getElementById('item-maker').value.trim();
+            const code = document.getElementById('item-code').value.trim();
+
+            if (!code) {
+                showLookupStatus('warn', `<span>品番を入力してから「検索」ボタンを押してください。</span>`);
+                document.getElementById('item-code').focus();
+                return;
+            }
+
+            // 既存の在籍データに同じメーカー・品番があればまず候補として提示
+            const existingMatch = inventory.find(i =>
+                (i.maker || '').toLowerCase() === maker.toLowerCase() &&
+                (i.code || '').toLowerCase() === code.toLowerCase()
+            );
+
+            const btn = document.getElementById('btn-lookup-product');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>検索中</span>`;
+            refreshIcons();
+
+            showLookupStatus('loading', `<div class="flex items-center space-x-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i><span>「${escapeHTML(maker)} ${escapeHTML(code)}」の製品情報を検索しています...</span></div>`);
+            refreshIcons();
+
+            try {
+                const apiKey = "";
+                const prompt = `鉄道模型（Nゲージ・HOゲージ等）の製品情報を検索してください。
+メーカー: ${maker}
+品番: ${code}
+
+該当製品の「正式な品名」「メーカー希望小売価格（定価・税込の半角数字のみ）」「種別（SL, DL, EL, DC, PC, EC, FC のいずれか1つ）」「形態（セット, 単品, バラシ, ASSY組立品 のいずれか1つ）」「分類（例: 通勤形, 特急形, 電気機関車など）」を以下のJSON形式のみで返してください。見つからない場合は found: false としてください。
+{"found": true, "name": "製品名", "price": 15400, "type": "EC", "formType": "セット", "category": "分類"}`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        tools: [{ google_search: {} }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+                if (jsonMatch) {
+                    const parsed = JSON.parse(jsonMatch[0]);
+                    if (parsed && parsed.found && parsed.name) {
+                        document.getElementById('item-name').value = parsed.name;
+                        if (parsed.price && !isNaN(Number(parsed.price))) {
+                            document.getElementById('item-price').value = Number(parsed.price);
+                        }
+                        if (['SL', 'DL', 'EL', 'DC', 'PC', 'EC', 'FC'].includes(parsed.type)) {
+                            document.getElementById('item-type').value = parsed.type;
+                        }
+                        if (['セット', '単品', 'バラシ', 'ASSY組立品'].includes(parsed.formType)) {
+                            document.getElementById('item-form-type').value = parsed.formType;
+                        }
+                        if (parsed.category && !document.getElementById('item-category').value) {
+                            document.getElementById('item-category').value = parsed.category;
+                        }
+
+                        const priceLabel = parsed.price ? ` / 定価: ¥${Number(parsed.price).toLocaleString()}` : '';
+                        showLookupStatus('success', `
+                            <div class="flex items-center space-x-1.5 truncate">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
+                                <span class="truncate">自動入力完了: <strong>${escapeHTML(parsed.name)}</strong>${priceLabel}</span>
+                            </div>
+                            <button type="button" onclick="hideLookupStatus()" class="text-emerald-700 hover:text-emerald-900 shrink-0 underline">閉じる</button>
+                        `);
+                        refreshIcons();
+                        showToast('品名と定価を自動入力しました');
+                        return;
+                    }
+                }
+
+                // Web検索で見つからず、既存在庫データに一致がある場合
+                if (existingMatch) {
+                    document.getElementById('item-name').value = existingMatch.name || '';
+                    if (existingMatch.price) document.getElementById('item-price').value = existingMatch.price;
+                    if (existingMatch.type) document.getElementById('item-type').value = existingMatch.type;
+                    if (existingMatch.formType) document.getElementById('item-form-type').value = existingMatch.formType;
+                    if (existingMatch.category) document.getElementById('item-category').value = existingMatch.category;
+                    showLookupStatus('success', `<span>登録済みの同一品番データから品名・定価を引用しました。</span>`);
+                    showToast('登録済みデータから自動入力しました');
+                } else {
+                    showLookupStatus('warn', `<span>該当する製品情報が見つかりませんでした。メーカー名や品番をご確認のうえ手動で入力してください。</span>`);
+                }
+            } catch (err) {
+                console.error(err);
+                if (existingMatch) {
+                    document.getElementById('item-name').value = existingMatch.name || '';
+                    if (existingMatch.price) document.getElementById('item-price').value = existingMatch.price;
+                    showLookupStatus('success', `<span>登録済みの同一品番データから品名・定価を引用しました。</span>`);
+                } else {
+                    showLookupStatus('error', `<span>検索中にエラーが発生しました。ネットワーク状態を確認するか手動で入力してください。</span>`);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="search" class="w-3.5 h-3.5"></i><span>検索</span>`;
+                refreshIcons();
+            }
+        }
+
+        // ==========================================
+        // Googleマイドライブ連携・自動同期機能
+        // ==========================================
+        function initGDriveUI() {
+            const savedClientId = localStorage.getItem(GDRIVE_CLIENT_ID_KEY) || '';
+            const input = document.getElementById('gdrive-client-id');
+            if (input) input.value = savedClientId;
+            updateGDriveStatusUI();
+        }
+
+        function openGDriveModal() {
+            initGDriveUI();
+            document.getElementById('gdrive-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeGDriveModal() {
+            document.getElementById('gdrive-modal').classList.add('hidden');
+        }
+
+        function toggleGDriveHelp() {
+            const box = document.getElementById('gdrive-help-box');
+            box.classList.toggle('hidden');
+            refreshIcons();
+        }
+
+        function saveGDriveClientId() {
+            const val = document.getElementById('gdrive-client-id').value.trim();
+            if (!val) {
+                localStorage.removeItem(GDRIVE_CLIENT_ID_KEY);
+                showToast('クライアントIDをクリアしました');
+                return;
+            }
+            localStorage.setItem(GDRIVE_CLIENT_ID_KEY, val);
+            gdriveTokenClient = null;
+            showToast('GoogleクライアントIDを保存しました');
+        }
+
+        function updateGDriveStatusUI(syncingState = null) {
+            const headerIcon = document.getElementById('gdrive-header-icon');
+            const headerLabel = document.getElementById('gdrive-header-label');
+            const statusDot = document.getElementById('gdrive-status-dot');
+            const statusTitle = document.getElementById('gdrive-status-title');
+            const statusSub = document.getElementById('gdrive-status-sub');
+            const fileBadge = document.getElementById('gdrive-file-badge');
+            const btnConnect = document.getElementById('btn-gdrive-connect');
+            const btnDisconnect = document.getElementById('btn-gdrive-disconnect');
+            const btnPull = document.getElementById('btn-gdrive-pull');
+            const btnPush = document.getElementById('btn-gdrive-push');
+
+            const isConnected = Boolean(gdriveAccessToken);
+
+            if (isConnected) {
+                if (headerIcon) headerIcon.className = 'w-4 h-4 text-sky-400';
+                if (headerLabel) headerLabel.textContent = syncingState === 'syncing' ? '同期中...' : 'ドライブ同期中';
+                if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0';
+                if (statusTitle) statusTitle.textContent = 'Googleマイドライブ接続済み';
+                if (statusSub) {
+                    const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    statusSub.textContent = syncingState === 'syncing'
+                        ? 'マイドライブと同期しています...'
+                        : `ファイル: ${GDRIVE_FILE_NAME}（最終更新 ${nowStr}）`;
+                }
+                if (fileBadge) {
+                    fileBadge.textContent = syncingState === 'syncing' ? '同期中...' : '自動同期ON';
+                    fileBadge.classList.remove('hidden');
+                }
+                if (btnConnect) btnConnect.classList.add('hidden');
+                if (btnDisconnect) btnDisconnect.classList.remove('hidden');
+                if (btnPull) btnPull.disabled = false;
+                if (btnPush) btnPush.disabled = false;
+            } else {
+                if (headerIcon) headerIcon.className = 'w-4 h-4 text-slate-400';
+                if (headerLabel) headerLabel.textContent = 'Googleドライブ';
+                if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0';
+                if (statusTitle) statusTitle.textContent = '未接続（ローカル保存のみ）';
+                if (statusSub) statusSub.textContent = 'Googleドライブと連携するとPC・スマホ間で自動同期できます';
+                if (fileBadge) fileBadge.classList.add('hidden');
+                if (btnConnect) btnConnect.classList.remove('hidden');
+                if (btnDisconnect) btnDisconnect.classList.add('hidden');
+                if (btnPull) btnPull.disabled = true;
+                if (btnPush) btnPush.disabled = true;
+            }
+        }
+
+        function connectGoogleDrive() {
+            const clientId = document.getElementById('gdrive-client-id').value.trim() || localStorage.getItem(GDRIVE_CLIENT_ID_KEY);
+            if (!clientId) {
+                showToast('先にGoogle OAuth クライアントIDを入力して保存してください');
+                document.getElementById('gdrive-help-box').classList.remove('hidden');
+                document.getElementById('gdrive-client-id').focus();
+                return;
+            }
+            localStorage.setItem(GDRIVE_CLIENT_ID_KEY, clientId);
+
+            if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+                showToast('Google認証ライブラリの読み込み中です。数秒後に再度お試しください。');
+                return;
+            }
+
+            try {
+                gdriveTokenClient = window.google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            gdriveAccessToken = tokenResponse.access_token;
+                            updateGDriveStatusUI('syncing');
+                            showToast('Googleドライブに接続しました');
+                            await initializeOrPullFromDrive();
+                        } else {
+                            showToast('Googleアカウントの認証がキャンセルされました');
+                        }
+                    }
+                });
+                gdriveTokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (err) {
+                console.error(err);
+                showToast('Google認証の初期化に失敗しました。クライアントIDをご確認ください。');
+            }
+        }
+
+        function disconnectGoogleDrive() {
+            if (gdriveAccessToken && window.google?.accounts?.oauth2) {
+                try {
+                    window.google.accounts.oauth2.revoke(gdriveAccessToken, () => {});
+                } catch {}
+            }
+            gdriveAccessToken = null;
+            gdriveFileId = null;
+            updateGDriveStatusUI();
+            showToast('Googleドライブとの接続を解除しました');
+        }
+
+        async function findGDriveDataFile() {
+            const query = encodeURIComponent(`name='${GDRIVE_FILE_NAME}' and trashed=false`);
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&spaces=drive&fields=files(id,name,modifiedTime)`, {
+                headers: { Authorization: `Bearer ${gdriveAccessToken}` }
+            });
+            if (res.status === 401) {
+                gdriveAccessToken = null;
+                updateGDriveStatusUI();
+                throw new Error('認証の有効期限が切れました。再度接続してください。');
+            }
+            if (!res.ok) throw new Error('Googleドライブのファイル検索に失敗しました');
+            const data = await res.json();
+            return data.files && data.files.length > 0 ? data.files[0] : null;
+        }
+
+        async function initializeOrPullFromDrive() {
+            try {
+                updateGDriveStatusUI('syncing');
+                const existingFile = await findGDriveDataFile();
+                if (existingFile) {
+                    gdriveFileId = existingFile.id;
+                    await syncFromGoogleDrive(true);
+                } else {
+                    await syncToGoogleDrive(true);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'Googleドライブ同期エラー');
+                updateGDriveStatusUI();
+            }
+        }
+
+        async function syncFromGoogleDrive(notify = false) {
+            if (!gdriveAccessToken) return;
+            try {
+                updateGDriveStatusUI('syncing');
+                if (!gdriveFileId) {
+                    const file = await findGDriveDataFile();
+                    if (!file) {
+                        if (notify) showToast('マイドライブ上にデータファイルがまだありません');
+                        updateGDriveStatusUI();
+                        return;
+                    }
+                    gdriveFileId = file.id;
+                }
+
+                const res = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, {
+                    headers: { Authorization: `Bearer ${gdriveAccessToken}` }
+                });
+                if (!res.ok) throw new Error('マイドライブからのデータ読み込みに失敗しました');
+
+                const payload = await res.json();
+                if (payload && Array.isArray(payload.inventory)) {
+                    inventory = payload.inventory;
+                    if (Array.isArray(payload.customMakers)) {
+                        customMakers = payload.customMakers;
+                        localStorage.setItem(getMakersStorageKey(), JSON.stringify(customMakers));
+                    }
+                    saveData(true);
+                    if (notify) showToast(`マイドライブから最新データを読み込みました（${inventory.length}件）`);
+                }
+                updateGDriveStatusUI();
+            } catch (err) {
+                console.error(err);
+                if (notify) showToast(err.message || '読み込みエラーが発生しました');
+                updateGDriveStatusUI();
+            }
+        }
+
+        async function syncToGoogleDrive(notify = false) {
+            if (!gdriveAccessToken) return;
+            try {
+                updateGDriveStatusUI('syncing');
+                if (!gdriveFileId) {
+                    const existing = await findGDriveDataFile();
+                    if (existing) gdriveFileId = existing.id;
+                }
+
+                const payloadObj = {
+                    version: 1,
+                    updatedAt: new Date().toISOString(),
+                    user: currentUser || 'default',
+                    customMakers,
+                    inventory
+                };
+                const jsonString = JSON.stringify(payloadObj);
+
+                const boundary = '-------railway_inventory_boundary_' + Date.now();
+                const metadata = {
+                    name: GDRIVE_FILE_NAME,
+                    mimeType: 'application/json'
+                };
+
+                const multipartBody =
+                    `--${boundary}\r\n` +
+                    `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+                    `${JSON.stringify(metadata)}\r\n` +
+                    `--${boundary}\r\n` +
+                    `Content-Type: application/json\r\n\r\n` +
+                    `${jsonString}\r\n` +
+                    `--${boundary}--`;
+
+                const url = gdriveFileId
+                    ? `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`
+                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+
+                const method = gdriveFileId ? 'PATCH' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        Authorization: `Bearer ${gdriveAccessToken}`,
+                        'Content-Type': `multipart/related; boundary=${boundary}`
+                    },
+                    body: multipartBody
+                });
+
+                if (res.status === 401) {
+                    gdriveAccessToken = null;
+                    updateGDriveStatusUI();
+                    throw new Error('認証の有効期限が切れました。再度接続してください。');
+                }
+                if (!res.ok) throw new Error('マイドライブへの保存に失敗しました');
+
+                const savedMeta = await res.json();
+                if (savedMeta && savedMeta.id) {
+                    gdriveFileId = savedMeta.id;
+                }
+                updateGDriveStatusUI();
+                if (notify) showToast(`Googleマイドライブに保存しました（${inventory.length}件）`);
+            } catch (err) {
+                console.error(err);
+                if (notify) showToast(err.message || 'マイドライブ保存エラー');
+                updateGDriveStatusUI();
+            }
+        }
+
+        function scheduleGDriveAutoSync() {
+            if (gdriveSyncTimer) clearTimeout(gdriveSyncTimer);
+            updateGDriveStatusUI('syncing');
+            gdriveSyncTimer = setTimeout(() => {
+                syncToGoogleDrive(false);
+            }, 1200);
+        }
+
+        // 手動バックアップJSON出力・読込
+        function exportBackupJSON() {
+            const payloadObj = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                user: currentUser || 'default',
+                customMakers,
+                inventory
+            };
+            const blob = new Blob([JSON.stringify(payloadObj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = GDRIVE_FILE_NAME;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`${GDRIVE_FILE_NAME} をダウンロードしました`);
+        }
+
+        function importBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && Array.isArray(parsed.inventory)) {
+                        inventory = parsed.inventory;
+                        if (Array.isArray(parsed.customMakers)) {
+                            customMakers = parsed.customMakers;
+                            localStorage.setItem(getMakersStorageKey(), JSON.stringify(customMakers));
+                        }
+                        saveData();
+                        showToast(`JSONから${inventory.length}件のデータを読み込みました`);
+                    } else {
+                        showToast('有効な車両在庫JSONファイルではありません');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('JSONファイルの解析に失敗しました');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+    </script>
+</body>
+</html>
