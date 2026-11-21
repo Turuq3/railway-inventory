@@ -315,24 +315,38 @@
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-500">
                         <div class="flex items-center gap-2">
-                            <span>表示件数: <strong id="train-filtered-count" class="text-slate-800">0</strong> 件</span>
+                            <span>該当: <strong id="train-filtered-count" class="text-slate-800">0</strong> 件</span>
+                            <span id="train-page-range" class="text-slate-400"></span>
                             <button type="button" onclick="resetTrainFilters()" class="text-blue-600 hover:underline ml-2">条件クリア</button>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label for="sort-train-by">並び替え:</label>
-                            <select id="sort-train-by" onchange="renderTrainList()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
-                                <option value="reg-desc">登録番号 (新しい順)</option>
-                                <option value="reg-asc">登録番号 (古い順)</option>
-                                <option value="box-asc">Box No.順</option>
-                                <option value="maker-asc">メーカー順</option>
-                                <option value="price-desc">定価 (高い順)</option>
-                            </select>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-1.5">
+                                <label for="limit-train-by">表示件数:</label>
+                                <select id="limit-train-by" onchange="changePageLimit('trains')" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700">
+                                    <option value="10">10件</option>
+                                    <option value="50" selected>50件</option>
+                                    <option value="100">100件</option>
+                                    <option value="all">全件</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <label for="sort-train-by">並び替え:</label>
+                                <select id="sort-train-by" onchange="renderTrainList()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
+                                    <option value="reg-desc">登録番号 (新しい順)</option>
+                                    <option value="reg-asc">登録番号 (古い順)</option>
+                                    <option value="box-asc">Box No.順</option>
+                                    <option value="maker-asc">メーカー順</option>
+                                    <option value="price-desc">定価 (高い順)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 車両一覧グリッド -->
                 <div id="train-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <!-- 車両ページネーション -->
+                <div id="train-pagination" class="flex items-center justify-center gap-2 pt-2"></div>
             </section>
 
             <!-- ===================================================================== -->
@@ -417,24 +431,38 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-500">
-                        <div>
-                            <span>表示件数: <strong id="part-filtered-count" class="text-slate-800">0</strong> 件</span>
+                        <div class="flex items-center gap-2">
+                            <span>該当: <strong id="part-filtered-count" class="text-slate-800">0</strong> 件</span>
+                            <span id="part-page-range" class="text-slate-400"></span>
                             <button type="button" onclick="resetPartFilters()" class="text-teal-600 hover:underline ml-2">条件クリア</button>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label for="sort-part-by">並び替え:</label>
-                            <select id="sort-part-by" onchange="renderPartList()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
-                                <option value="reg-desc">登録番号 (新しい順)</option>
-                                <option value="reg-asc">登録番号 (古い順)</option>
-                                <option value="maker-asc">メーカー順</option>
-                                <option value="qty-desc">所持数 (多い順)</option>
-                            </select>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-1.5">
+                                <label for="limit-part-by">表示件数:</label>
+                                <select id="limit-part-by" onchange="changePageLimit('parts')" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700">
+                                    <option value="10">10件</option>
+                                    <option value="50" selected>50件</option>
+                                    <option value="100">100件</option>
+                                    <option value="all">全件</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <label for="sort-part-by">並び替え:</label>
+                                <select id="sort-part-by" onchange="renderPartList()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
+                                    <option value="reg-desc">登録番号 (新しい順)</option>
+                                    <option value="reg-asc">登録番号 (古い順)</option>
+                                    <option value="maker-asc">メーカー順</option>
+                                    <option value="qty-desc">所持数 (多い順)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- パーツ一覧グリッド -->
                 <div id="part-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <!-- パーツページネーション -->
+                <div id="part-pagination" class="flex items-center justify-center gap-2 pt-2"></div>
             </section>
 
             <!-- ===================================================================== -->
@@ -487,24 +515,38 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-500">
-                        <div>
-                            <span>表示件数: <strong id="rail-filtered-count" class="text-slate-800">0</strong> 件</span>
+                        <div class="flex items-center gap-2">
+                            <span>該当: <strong id="rail-filtered-count" class="text-slate-800">0</strong> 件</span>
+                            <span id="rail-page-range" class="text-slate-400"></span>
                             <button type="button" onclick="resetRailFilters()" class="text-amber-600 hover:underline ml-2">条件クリア</button>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label for="sort-rail-by">並び替え:</label>
-                            <select id="sort-rail-by" onchange="renderRailList()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
-                                <option value="reg-desc">登録番号 (新しい順)</option>
-                                <option value="reg-asc">登録番号 (古い順)</option>
-                                <option value="maker-asc">メーカー順</option>
-                                <option value="qty-desc">所持数 (多い順)</option>
-                            </select>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-1.5">
+                                <label for="limit-rail-by">表示件数:</label>
+                                <select id="limit-rail-by" onchange="changePageLimit('rails')" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700">
+                                    <option value="10">10件</option>
+                                    <option value="50" selected>50件</option>
+                                    <option value="100">100件</option>
+                                    <option value="all">全件</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <label for="sort-rail-by">並び替え:</label>
+                                <select id="sort-rail-by" onchange="renderRailList()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
+                                    <option value="reg-desc">登録番号 (新しい順)</option>
+                                    <option value="reg-asc">登録番号 (古い順)</option>
+                                    <option value="maker-asc">メーカー順</option>
+                                    <option value="qty-desc">所持数 (多い順)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- レール一覧グリッド -->
                 <div id="rail-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <!-- レールページネーション -->
+                <div id="rail-pagination" class="flex items-center justify-center gap-2 pt-2"></div>
             </section>
         </main>
     </div>
@@ -1107,6 +1149,37 @@
         </div>
     </div>
 
+    <!-- ===================================================================== -->
+    <!-- モーダル8：CSV重複データ警告・インポート確認モーダル                        -->
+    <!-- ===================================================================== -->
+    <div id="csv-dup-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+            <div class="px-5 py-4 bg-amber-600 text-white flex items-center gap-2.5">
+                <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0"></i>
+                <h3 class="font-bold text-base">CSV重複データの警告</h3>
+            </div>
+            <div class="p-5 space-y-4">
+                <p id="csv-dup-summary" class="text-sm text-slate-700 leading-relaxed font-medium"></p>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1.5">
+                    <p class="text-xs font-bold text-amber-800">完全一致したデータ（一部抜粋）:</p>
+                    <ul id="csv-dup-list" class="text-xs text-amber-900 space-y-1 max-h-36 overflow-y-auto list-disc pl-4"></ul>
+                </div>
+                <p class="text-xs text-slate-500">どのようにインポートを実行しますか？</p>
+                <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="resolveCsvDuplicate('cancel')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">
+                        キャンセル
+                    </button>
+                    <button type="button" id="csv-dup-skip-btn" onclick="resolveCsvDuplicate('skip')" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                        重複を除いて新規のみ追加
+                    </button>
+                    <button type="button" onclick="resolveCsvDuplicate('all')" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-sm">
+                        重複も含めてすべて追加
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト通知 -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -1167,6 +1240,13 @@
         let partInventory = [];
         let railInventory = [];
         let customMakers = [];
+
+        // ページネーション状態管理（デフォルト50件表示）
+        let currentPages = {
+            trains: 1,
+            parts: 1,
+            rails: 1
+        };
 
         // モーダル一時画像保持
         let tempImages = {
@@ -1961,7 +2041,68 @@
             document.getElementById('filter-train-category').value = '';
             document.getElementById('filter-train-box').value = '';
             document.getElementById('filter-train-motor').value = '';
+            currentPages.trains = 1;
             renderTrainList();
+        }
+
+        function changePageLimit(sys) {
+            currentPages[sys] = 1;
+            if (sys === 'trains') renderTrainList();
+            else if (sys === 'parts') renderPartList();
+            else if (sys === 'rails') renderRailList();
+        }
+
+        function goToPage(sys, page) {
+            currentPages[sys] = page;
+            if (sys === 'trains') renderTrainList();
+            else if (sys === 'parts') renderPartList();
+            else if (sys === 'rails') renderRailList();
+        }
+
+        function applyPagination(sys, items, rangeElId, paginationElId, activeColorClass) {
+            const limitVal = document.getElementById(`limit-${sys === 'trains' ? 'train' : sys === 'parts' ? 'part' : 'rail'}-by`)?.value || '50';
+            const rangeEl = document.getElementById(rangeElId);
+            const pagEl = document.getElementById(paginationElId);
+
+            if (items.length === 0 || limitVal === 'all') {
+                if (rangeEl) rangeEl.textContent = items.length > 0 ? `(全 ${items.length} 件表示)` : '';
+                if (pagEl) pagEl.innerHTML = '';
+                return items;
+            }
+
+            const limit = parseInt(limitVal, 10) || 50;
+            const totalPages = Math.max(1, Math.ceil(items.length / limit));
+            if (currentPages[sys] > totalPages) currentPages[sys] = totalPages;
+            if (currentPages[sys] < 1) currentPages[sys] = 1;
+
+            const startIdx = (currentPages[sys] - 1) * limit;
+            const endIdx = Math.min(startIdx + limit, items.length);
+
+            if (rangeEl) {
+                rangeEl.textContent = `(${startIdx + 1}〜${endIdx} 件を表示)`;
+            }
+
+            if (pagEl) {
+                if (totalPages <= 1) {
+                    pagEl.innerHTML = '';
+                } else {
+                    pagEl.innerHTML = `
+                        <button type="button" onclick="goToPage('${sys}', ${currentPages[sys] - 1})" ${currentPages[sys] <= 1 ? 'disabled' : ''}
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none transition">
+                            ← 前へ
+                        </button>
+                        <span class="px-3 py-1.5 rounded-xl text-xs font-bold ${activeColorClass} text-white">
+                            ${currentPages[sys]} / ${totalPages} ページ
+                        </span>
+                        <button type="button" onclick="goToPage('${sys}', ${currentPages[sys] + 1})" ${currentPages[sys] >= totalPages ? 'disabled' : ''}
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none transition">
+                            次へ →
+                        </button>
+                    `;
+                }
+            }
+
+            return items.slice(startIdx, endIdx);
         }
 
         function renderTrainList() {
@@ -1995,9 +2136,10 @@
             });
 
             document.getElementById('train-filtered-count').textContent = filtered.length;
+            const pagedItems = applyPagination('trains', filtered, 'train-page-range', 'train-pagination', 'bg-blue-600');
             const container = document.getElementById('train-list-container');
 
-            if (filtered.length === 0) {
+            if (pagedItems.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full bg-white rounded-2xl p-10 text-center border border-slate-200 text-slate-400">
                         <i data-lucide="train" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
@@ -2007,7 +2149,7 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(item => `
+            container.innerHTML = pagedItems.map(item => `
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 hover:shadow-md transition overflow-hidden flex flex-col justify-between">
                     <div class="p-4 space-y-3">
                         <!-- 上部：横長サムネイル(96x48) + 登録番号・メーカー・品名 -->
@@ -2163,6 +2305,7 @@
             document.getElementById('filter-part-maker').value = '';
             document.getElementById('filter-part-type').value = '';
             document.getElementById('filter-part-status').value = '';
+            currentPages.parts = 1;
             renderPartList();
         }
 
@@ -2193,9 +2336,10 @@
             });
 
             document.getElementById('part-filtered-count').textContent = filtered.length;
+            const pagedItems = applyPagination('parts', filtered, 'part-page-range', 'part-pagination', 'bg-teal-600');
             const container = document.getElementById('part-list-container');
 
-            if (filtered.length === 0) {
+            if (pagedItems.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full bg-white rounded-2xl p-10 text-center border border-slate-200 text-slate-400">
                         <i data-lucide="wrench" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
@@ -2205,7 +2349,7 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(item => {
+            container.innerHTML = pagedItems.map(item => {
                 const statusColors = {
                     '未使用': 'bg-emerald-50 text-emerald-700 font-bold',
                     '一部使用': 'bg-amber-50 text-amber-700 font-bold',
@@ -2344,6 +2488,7 @@
         function resetRailFilters() {
             document.getElementById('filter-rail-search').value = '';
             document.getElementById('filter-rail-maker').value = '';
+            currentPages.rails = 1;
             renderRailList();
         }
 
@@ -2370,9 +2515,10 @@
             });
 
             document.getElementById('rail-filtered-count').textContent = filtered.length;
+            const pagedItems = applyPagination('rails', filtered, 'rail-page-range', 'rail-pagination', 'bg-amber-600');
             const container = document.getElementById('rail-list-container');
 
-            if (filtered.length === 0) {
+            if (pagedItems.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full bg-white rounded-2xl p-10 text-center border border-slate-200 text-slate-400">
                         <i data-lucide="git-commit-horizontal" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
@@ -2382,7 +2528,7 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(item => `
+            container.innerHTML = pagedItems.map(item => `
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 hover:shadow-md transition overflow-hidden flex flex-col justify-between">
                     <div class="p-4 space-y-3">
                         <div class="flex items-start gap-3">
@@ -2492,34 +2638,120 @@
             closeRailModal();
         }
 
-        // ==================== 削除確認モーダル ====================
-        function confirmDelete(systemType, id, label) {
-            document.getElementById('confirm-message').textContent = `「${label}」を削除してもよろしいですか？`;
-            const modal = document.getElementById('confirm-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        // ==================== 削除確認モーダル処理 ====================
+        let pendingDeleteAction = null;
 
-            document.getElementById('confirm-exec-btn').onclick = function() {
-                if (systemType === 'trains') {
+        function confirmDelete(sys, id, name) {
+            document.getElementById('confirm-message').textContent = `「${name}」を削除してもよろしいですか？`;
+            pendingDeleteAction = () => {
+                if (sys === 'trains') {
                     trainInventory = trainInventory.filter(i => i.id !== id);
-                } else if (systemType === 'parts') {
+                } else if (sys === 'parts') {
                     partInventory = partInventory.filter(i => i.id !== id);
-                } else if (systemType === 'rails') {
+                } else if (sys === 'rails') {
                     railInventory = railInventory.filter(i => i.id !== id);
                 }
                 saveUserData();
-                closeConfirmModal();
-                showToast('削除しました', 'info');
+                showToast('データを削除しました', 'info');
             };
+            const execBtn = document.getElementById('confirm-exec-btn');
+            execBtn.onclick = () => {
+                if (pendingDeleteAction) pendingDeleteAction();
+                closeConfirmModal();
+            };
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            refreshIcons();
         }
 
         function closeConfirmModal() {
+            pendingDeleteAction = null;
             const modal = document.getElementById('confirm-modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
 
-        // ==================== CSV インポート（UTF-8 / Shift_JIS自動判別 & 自動補完） & エクスポート ====================
+        // ==================== CSV インポート（UTF-8 / Shift_JIS自動判別 & 自動補完 & 重複確認） & エクスポート ====================
+        let pendingCsvImportResolver = null;
+
+        function promptCsvDuplicateConfirm(duplicateRecords, totalRecords) {
+            return new Promise((resolve) => {
+                pendingCsvImportResolver = resolve;
+                const nonDupCount = totalRecords - duplicateRecords.length;
+                document.getElementById('csv-dup-summary').textContent =
+                    `取り込み対象のCSVデータ ${totalRecords}件のうち、既存データと内容が完全に一致するデータが ${duplicateRecords.length}件見つかりました。`;
+
+                const listEl = document.getElementById('csv-dup-list');
+                listEl.innerHTML = duplicateRecords.slice(0, 10).map(item => {
+                    const code = item.partNo || item.modelNo || '-';
+                    return `<li><span class="font-bold">${escapeHTML(item.maker)}</span> [${escapeHTML(code)}] ${escapeHTML(item.name)}</li>`;
+                }).join('') + (duplicateRecords.length > 10 ? `<li>…ほか ${duplicateRecords.length - 10} 件</li>` : '');
+
+                const skipBtn = document.getElementById('csv-dup-skip-btn');
+                if (nonDupCount <= 0) {
+                    skipBtn.classList.add('hidden');
+                } else {
+                    skipBtn.classList.remove('hidden');
+                    skipBtn.textContent = `重複を除いて新規のみ追加 (${nonDupCount}件)`;
+                }
+
+                const modal = document.getElementById('csv-dup-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                refreshIcons();
+            });
+        }
+
+        function resolveCsvDuplicate(choice) {
+            const modal = document.getElementById('csv-dup-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (pendingCsvImportResolver) {
+                const fn = pendingCsvImportResolver;
+                pendingCsvImportResolver = null;
+                fn(choice);
+            }
+        }
+
+        function isExactMatchTrain(a, b) {
+            return (a.maker || '') === (b.maker || '') &&
+                (a.partNo || '') === (b.partNo || '') &&
+                (a.name || '') === (b.name || '') &&
+                (a.setName || '') === (b.setName || '') &&
+                (a.type || '') === (b.type || '') &&
+                (a.formType || '') === (b.formType || '') &&
+                (a.category || '') === (b.category || '') &&
+                (a.carNo || '') === (b.carNo || '') &&
+                (a.motor || '') === (b.motor || '') &&
+                (a.light || '') === (b.light || '') &&
+                (a.coupler || '') === (b.coupler || '') &&
+                (a.boxNo || '') === (b.boxNo || '') &&
+                (Number(a.price) || 0) === (Number(b.price) || 0) &&
+                (a.notes || '') === (b.notes || '');
+        }
+
+        function isExactMatchPart(a, b) {
+            return (a.name || '') === (b.name || '') &&
+                (a.maker || '') === (b.maker || '') &&
+                (a.modelNo || '') === (b.modelNo || '') &&
+                (a.usage || '') === (b.usage || '') &&
+                (a.type || '') === (b.type || '') &&
+                (Number(a.qty) || 0) === (Number(b.qty) || 0) &&
+                (a.status || '') === (b.status || '') &&
+                (Number(a.price) || 0) === (Number(b.price) || 0) &&
+                (a.notes || '') === (b.notes || '');
+        }
+
+        function isExactMatchRail(a, b) {
+            return (a.maker || '') === (b.maker || '') &&
+                (a.modelNo || '') === (b.modelNo || '') &&
+                (a.name || '') === (b.name || '') &&
+                (Number(a.qty) || 0) === (Number(b.qty) || 0) &&
+                (Number(a.price) || 0) === (Number(b.price) || 0) &&
+                (a.notes || '') === (b.notes || '');
+        }
+
         function parseCSVText(text) {
             const rows = [];
             let row = [];
@@ -2613,7 +2845,7 @@
                     return idx !== -1 ? idx : fallbackIdx;
                 };
 
-                let importedCount = 0;
+                const parsedCandidates = [];
 
                 if (activeSystem === 'trains') {
                     const idxReg = findCol(['登録番号'], 0);
@@ -2634,9 +2866,7 @@
                     const idxNotes = findCol(['備考'], 15);
 
                     for (const r of dataRows) {
-                        let regNo = (r[idxReg] || '').trim();
-                        if (!regNo) regNo = generateNextRegNo('T', trainInventory);
-
+                        const rawRegNo = (r[idxReg] || '').trim();
                         const maker = (r[idxMaker] || '').trim() || 'KATO';
                         const partNo = (r[idxPartNo] || '').trim();
                         let name = (r[idxName] || '').trim();
@@ -2655,9 +2885,9 @@
 
                         if (!name && !partNo) continue;
 
-                        trainInventory.push({
+                        const candidate = {
                             id: 'tr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                            regNo,
+                            regNo: rawRegNo,
                             regDate: (r[idxDate] || '').trim() || new Date().toISOString().split('T')[0],
                             maker,
                             partNo,
@@ -2674,8 +2904,9 @@
                             price,
                             notes: (r[idxNotes] || '').trim(),
                             image: ''
-                        });
-                        importedCount++;
+                        };
+                        const isDup = trainInventory.some(existing => isExactMatchTrain(existing, candidate));
+                        parsedCandidates.push({ record: candidate, isDup });
                     }
                 } else if (activeSystem === 'parts') {
                     const idxReg = findCol(['登録番号'], 0);
@@ -2690,9 +2921,7 @@
                     const idxNotes = findCol(['備考'], 9);
 
                     for (const r of dataRows) {
-                        let regNo = (r[idxReg] || '').trim();
-                        if (!regNo) regNo = generateNextRegNo('P', partInventory);
-
+                        const rawRegNo = (r[idxReg] || '').trim();
                         const maker = (r[idxMaker] || '').trim() || 'KATO';
                         const modelNo = (r[idxModel] || '').trim();
                         let name = (r[idxName] || '').trim();
@@ -2708,9 +2937,9 @@
 
                         if (!name && !modelNo) continue;
 
-                        partInventory.push({
+                        const candidate = {
                             id: 'pt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                            regNo,
+                            regNo: rawRegNo,
                             name: name || `${maker} ${modelNo}`,
                             maker,
                             modelNo,
@@ -2721,8 +2950,9 @@
                             price,
                             notes: (r[idxNotes] || '').trim(),
                             image: ''
-                        });
-                        importedCount++;
+                        };
+                        const isDup = partInventory.some(existing => isExactMatchPart(existing, candidate));
+                        parsedCandidates.push({ record: candidate, isDup });
                     }
                 } else if (activeSystem === 'rails') {
                     const idxReg = findCol(['登録番号'], 0);
@@ -2734,9 +2964,7 @@
                     const idxNotes = findCol(['備考'], 6);
 
                     for (const r of dataRows) {
-                        let regNo = (r[idxReg] || '').trim();
-                        if (!regNo) regNo = generateNextRegNo('R', railInventory);
-
+                        const rawRegNo = (r[idxReg] || '').trim();
                         const maker = (r[idxMaker] || '').trim() || 'KATO';
                         const modelNo = (r[idxModel] || '').trim();
                         let name = (r[idxName] || '').trim();
@@ -2752,9 +2980,9 @@
 
                         if (!name && !modelNo) continue;
 
-                        railInventory.push({
+                        const candidate = {
                             id: 'rl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                            regNo,
+                            regNo: rawRegNo,
                             maker,
                             modelNo,
                             name: name || `${maker} ${modelNo}`,
@@ -2762,13 +2990,49 @@
                             price,
                             notes: (r[idxNotes] || '').trim(),
                             image: ''
-                        });
-                        importedCount++;
+                        };
+                        const isDup = railInventory.some(existing => isExactMatchRail(existing, candidate));
+                        parsedCandidates.push({ record: candidate, isDup });
                     }
                 }
 
+                if (parsedCandidates.length === 0) {
+                    showToast('インポート可能なデータ行が見つかりませんでした', 'warning');
+                    return;
+                }
+
+                const duplicates = parsedCandidates.filter(c => c.isDup).map(c => c.record);
+                let toInsert = parsedCandidates.map(c => c.record);
+
+                if (duplicates.length > 0) {
+                    const userChoice = await promptCsvDuplicateConfirm(duplicates, parsedCandidates.length);
+                    if (userChoice === 'cancel') {
+                        showToast('CSVインポートをキャンセルしました', 'info');
+                        return;
+                    }
+                    if (userChoice === 'skip') {
+                        toInsert = parsedCandidates.filter(c => !c.isDup).map(c => c.record);
+                    }
+                }
+
+                if (toInsert.length === 0) {
+                    showToast('新規に追加するデータはありませんでした', 'info');
+                    return;
+                }
+
+                // 登録番号の自動採番を確定しながら格納
+                const prefix = activeSystem === 'trains' ? 'T' : activeSystem === 'parts' ? 'P' : 'R';
+                const targetArray = activeSystem === 'trains' ? trainInventory : activeSystem === 'parts' ? partInventory : railInventory;
+
+                for (const rec of toInsert) {
+                    if (!rec.regNo) {
+                        rec.regNo = generateNextRegNo(prefix, targetArray);
+                    }
+                    targetArray.push(rec);
+                }
+
                 saveUserData();
-                showToast(`${importedCount}件のデータをCSVからインポートしました`, 'success');
+                showToast(`${toInsert.length}件のデータをCSVからインポートしました`, 'success');
             } catch (err) {
                 console.error('CSV Import Error:', err);
                 showToast('CSVの読み込み中にエラーが発生しました', 'error');
