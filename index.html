@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>車両在庫管理システム</title>
+    <title>N在庫管理システム</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter & Noto Sans JP -->
@@ -51,7 +51,7 @@
     <div id="auth-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             <div class="bg-slate-800 text-white p-6 text-center space-y-2 border-b border-slate-700">
-                <h2 class="text-xl font-bold tracking-tight">車両在庫管理システム</h2>
+                <h2 class="text-xl font-bold tracking-tight">N在庫管理システム</h2>
                 <p class="text-xs text-slate-400">アクセスするにはアカウント認証が必要です</p>
             </div>
 
@@ -116,38 +116,39 @@
     <!-- アプリケーション本体ラッパー -->
     <div id="app-wrapper" class="hidden min-h-screen flex flex-col">
 
-    <!-- ヘッダー -->
+    <!-- ヘッダー（1行目＋2行目システム切替ナビ） -->
     <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <!-- 1行目: タイトル・共通アクション -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
             <div class="flex items-center">
                 <div>
-                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">車両在庫管理システム</h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Model Railway Rolling Stock Inventory</p>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">N在庫管理システム</h1>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">Model Railway Rolling Stock, Parts & Track Inventory</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <div class="hidden sm:flex items-center space-x-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+            <div class="flex items-center space-x-1.5 sm:space-x-2.5">
+                <div class="hidden sm:flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
                     <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-400"></i>
                     <span id="current-user-display" class="font-semibold">admin</span>
                 </div>
-                <button onclick="openPasswordModal()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="パスワード変更">
+                <button onclick="openPasswordModal()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition border border-slate-700" title="パスワード変更">
                     <i data-lucide="key-round" class="w-4 h-4"></i>
-                    <span class="hidden lg:inline">パスワード変更</span>
+                    <span class="hidden xl:inline">パスワード変更</span>
                 </button>
-                <button onclick="openGDriveModal()" id="gdrive-header-btn" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="Googleマイドライブと同期・保存">
+                <button onclick="openGDriveModal()" id="gdrive-header-btn" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition border border-slate-700" title="Googleマイドライブと同期・保存">
                     <i data-lucide="cloud" id="gdrive-header-icon" class="w-4 h-4 text-slate-400"></i>
                     <span id="gdrive-header-label" class="hidden md:inline">Googleドライブ</span>
                 </button>
-                <input type="file" id="csv-import-input" accept=".csv" class="hidden" onchange="importCSV(event)">
-                <button onclick="document.getElementById('csv-import-input').click()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="CSVファイルからインポート">
+                <input type="file" id="csv-import-input" accept=".csv" class="hidden" onchange="importActiveCSV(event)">
+                <button onclick="document.getElementById('csv-import-input').click()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition border border-slate-700" title="現在表示中のシステムへCSV一括インポート（空欄を自動検索補完）">
                     <i data-lucide="upload" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">CSVインポート</span>
+                    <span class="hidden lg:inline">CSVインポート</span>
                 </button>
-                <button onclick="exportCSV()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition border border-slate-700" title="CSV形式でエクスポート">
+                <button onclick="exportActiveCSV()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition border border-slate-700" title="現在表示中のシステムをCSVエクスポート">
                     <i data-lucide="download" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">CSVエクスポート</span>
+                    <span class="hidden lg:inline">CSVエクスポート</span>
                 </button>
-                <button onclick="openModal()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition">
+                <button onclick="openActiveModal()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold shadow-sm transition">
                     <i data-lucide="plus" class="w-4 h-4"></i>
                     <span>新規登録</span>
                 </button>
@@ -156,10 +157,36 @@
                 </button>
             </div>
         </div>
+
+        <!-- 2行目: 車両・パーツ・線路 システム切替ナビゲーション -->
+        <nav class="bg-slate-800 border-t border-slate-700/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-11 flex items-center space-x-2">
+                <button type="button" id="nav-btn-trains" onclick="switchSystem('trains')"
+                    class="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-emerald-600 text-white shadow-sm transition">
+                    <i data-lucide="train-front" class="w-4 h-4"></i>
+                    <span>車両</span>
+                    <span id="nav-count-trains" class="text-[10px] bg-black/25 px-1.5 py-0.2 rounded-full">0</span>
+                </button>
+                <button type="button" id="nav-btn-parts" onclick="switchSystem('parts')"
+                    class="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition">
+                    <i data-lucide="wrench" class="w-4 h-4"></i>
+                    <span>パーツ</span>
+                    <span id="nav-count-parts" class="text-[10px] bg-slate-700 px-1.5 py-0.2 rounded-full">0</span>
+                </button>
+                <button type="button" id="nav-btn-rails" onclick="switchSystem('rails')"
+                    class="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition">
+                    <i data-lucide="git-commit-horizontal" class="w-4 h-4"></i>
+                    <span>線路</span>
+                    <span id="nav-count-rails" class="text-[10px] bg-slate-700 px-1.5 py-0.2 rounded-full">0</span>
+                </button>
+            </div>
+        </nav>
     </header>
 
-    <!-- メインコンテンツ -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+    <!-- ========================================================== -->
+    <!-- システム1: 車両在庫管理システム -->
+    <!-- ========================================================== -->
+    <main id="section-trains" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
 
         <!-- 統計ダッシュボード -->
         <section class="space-y-2.5">
@@ -347,24 +374,247 @@
 
     </main>
 
+    <!-- ========================================================== -->
+    <!-- システム2: パーツ在庫管理システム -->
+    <!-- ========================================================== -->
+    <main id="section-parts" class="hidden flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+
+        <!-- パーツ統計ダッシュボード -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">登録パーツ種数</p>
+                    <p class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight mt-0.5"><span id="parts-stat-types">0</span><span class="text-xs font-normal text-slate-500 ml-1">種</span></p>
+                </div>
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <i data-lucide="wrench" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">総所持数</p>
+                    <p class="text-xl sm:text-2xl font-bold text-amber-600 leading-tight mt-0.5"><span id="parts-stat-qty">0</span><span class="text-xs font-normal text-slate-500 ml-1">個</span></p>
+                </div>
+                <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">未使用パーツ数</p>
+                    <p class="text-xl sm:text-2xl font-bold text-emerald-600 leading-tight mt-0.5"><span id="parts-stat-unused">0</span><span class="text-xs font-normal text-slate-500 ml-1">個</span></p>
+                </div>
+                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <i data-lucide="check-square" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">定価総額（定価×所持数）</p>
+                    <p id="parts-stat-value" class="text-lg sm:text-xl font-bold text-slate-800 leading-tight mt-0.5">¥0</p>
+                </div>
+                <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- パーツ検索・フィルターバー -->
+        <section class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 space-y-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                <div class="lg:col-span-2 relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="parts-filter-search" oninput="renderPartsList()" placeholder="登録番号・商品名・型番・用途・種別・備考で検索..." 
+                        class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                </div>
+
+                <div>
+                    <select id="parts-filter-maker" onchange="renderPartsList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべてのメーカー</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="parts-filter-type" onchange="renderPartsList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべての種別</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="parts-filter-status" onchange="renderPartsList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">使用状況（すべて）</option>
+                        <option value="未使用">未使用</option>
+                        <option value="使用中">使用中</option>
+                        <option value="一部使用">一部使用</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-500">登録番号: <span class="font-mono font-semibold text-slate-700">P-数値</span> 自動採番</span>
+                </div>
+                <button onclick="resetPartsFilters()" class="text-slate-500 hover:text-slate-800 underline">フィルターをリセット</button>
+            </div>
+        </section>
+
+        <!-- パーツ一覧グリッド -->
+        <section>
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                    <span>パーツ在庫一覧</span>
+                    <span id="parts-filtered-count" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full">0件</span>
+                </h2>
+                <div class="flex items-center space-x-2 text-xs text-slate-500">
+                    <span>並び替え:</span>
+                    <select id="parts-sort-by" onchange="renderPartsList()" class="bg-white border border-slate-300 rounded-md px-2 py-1 text-slate-700 focus:outline-none">
+                        <option value="newest">登録番号 新しい順</option>
+                        <option value="oldest">登録番号 古い順</option>
+                        <option value="maker">メーカー順</option>
+                        <option value="qty_desc">所持数が多い順</option>
+                        <option value="price_desc">定価が高い順</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="parts-inventory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            </div>
+
+            <div id="parts-empty-state" class="hidden bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
+                <div class="mx-auto w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3">
+                    <i data-lucide="wrench" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-800">該当するパーツが見つかりません</h3>
+                <p class="text-sm text-slate-500 mt-1">検索条件を変更するか、「新規登録」からパーツを追加してください。</p>
+                <button onclick="openPartModal()" class="mt-4 inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>最初のパーツを登録する</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================================== -->
+    <!-- システム3: レール在庫管理システム -->
+    <!-- ========================================================== -->
+    <main id="section-rails" class="hidden flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+
+        <!-- レール統計ダッシュボード -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">登録線路種数</p>
+                    <p class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight mt-0.5"><span id="rails-stat-types">0</span><span class="text-xs font-normal text-slate-500 ml-1">種</span></p>
+                </div>
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <i data-lucide="git-commit-horizontal" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">総所持数</p>
+                    <p class="text-xl sm:text-2xl font-bold text-emerald-600 leading-tight mt-0.5"><span id="rails-stat-qty">0</span><span class="text-xs font-normal text-slate-500 ml-1">本/個</span></p>
+                </div>
+                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <div class="bg-white px-3.5 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium text-slate-500">定価総額（定価×所持数）</p>
+                    <p id="rails-stat-value" class="text-lg sm:text-xl font-bold text-slate-800 leading-tight mt-0.5">¥0</p>
+                </div>
+                <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- レール検索・フィルターバー -->
+        <section class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 space-y-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <div class="lg:col-span-2 relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="rails-filter-search" oninput="renderRailsList()" placeholder="登録番号・商品名・型番・メーカー・備考で検索..." 
+                        class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                </div>
+
+                <div>
+                    <select id="rails-filter-maker" onchange="renderRailsList()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">すべてのメーカー</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between px-2 text-xs">
+                    <span class="text-slate-500">登録番号: <span class="font-mono font-semibold text-slate-700">R-数値</span> 自動採番</span>
+                    <button onclick="resetRailsFilters()" class="text-slate-500 hover:text-slate-800 underline">リセット</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- レール一覧グリッド -->
+        <section>
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                    <span>線路在庫一覧</span>
+                    <span id="rails-filtered-count" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full">0件</span>
+                </h2>
+                <div class="flex items-center space-x-2 text-xs text-slate-500">
+                    <span>並び替え:</span>
+                    <select id="rails-sort-by" onchange="renderRailsList()" class="bg-white border border-slate-300 rounded-md px-2 py-1 text-slate-700 focus:outline-none">
+                        <option value="newest">登録番号 新しい順</option>
+                        <option value="oldest">登録番号 古い順</option>
+                        <option value="maker">メーカー順</option>
+                        <option value="qty_desc">所持数が多い順</option>
+                        <option value="price_desc">定価が高い順</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="rails-inventory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            </div>
+
+            <div id="rails-empty-state" class="hidden bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
+                <div class="mx-auto w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3">
+                    <i data-lucide="git-commit-horizontal" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-800">該当する線路が見つかりません</h3>
+                <p class="text-sm text-slate-500 mt-1">検索条件を変更するか、「新規登録」から線路を追加してください。</p>
+                <button onclick="openRailModal()" class="mt-4 inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>最初の線路を登録する</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
     <!-- フッター -->
     <footer class="bg-white border-t border-slate-200 mt-12 py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-            <p>※データはブラウザのローカルストレージに自動保存されます。</p>
+            <p>※データはブラウザのローカルストレージ（および連携中のGoogleマイドライブ）に自動保存されます。</p>
             <div class="flex space-x-4">
-                <button onclick="loadSampleData()" class="hover:text-emerald-600 underline">サンプルデータを再読込</button>
-                <button onclick="confirmClearAll()" class="hover:text-rose-600 underline">全データを初期化</button>
+                <button onclick="loadActiveSampleData()" class="hover:text-emerald-600 underline">サンプルデータを再読込</button>
+                <button onclick="confirmClearActiveAll()" class="hover:text-rose-600 underline">現在のシステムデータを初期化</button>
             </div>
         </div>
     </footer>
 
-    <!-- 登録・編集モーダル -->
+    <!-- ========================================================== -->
+    <!-- モーダル1: 車両 登録・編集モーダル -->
+    <!-- ========================================================== -->
     <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8">
             <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
                 <h3 id="modal-title" class="text-lg font-bold flex items-center space-x-2">
                     <i data-lucide="train-front" class="w-5 h-5 text-emerald-400"></i>
-                    <span>新規登録</span>
+                    <span>車両 新規登録</span>
                 </h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -398,14 +648,14 @@
                         <div class="flex space-x-1.5">
                             <select id="item-maker" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
                             </select>
-                            <button type="button" onclick="toggleNewMakerInput()" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shrink-0 transition" title="新しいメーカーを追加">
+                            <button type="button" onclick="toggleNewMakerInput('train')" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shrink-0 transition" title="新しいメーカーを追加">
                                 ＋追加
                             </button>
                         </div>
-                        <div id="new-maker-box" class="hidden mt-1.5 flex space-x-1.5">
-                            <input type="text" id="new-maker-input" placeholder="新規メーカー名を入力" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMaker();}"
+                        <div id="new-maker-box-train" class="hidden mt-1.5 flex space-x-1.5">
+                            <input type="text" id="new-maker-input-train" placeholder="新規メーカー名を入力" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMaker('train');}"
                                 class="w-full px-2.5 py-1.5 border border-emerald-400 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <button type="button" onclick="addCustomMaker()" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shrink-0">
+                            <button type="button" onclick="addCustomMaker('train')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shrink-0">
                                 登録
                             </button>
                         </div>
@@ -571,6 +821,310 @@
         </div>
     </div>
 
+    <!-- ========================================================== -->
+    <!-- モーダル2: パーツ 登録・編集モーダル -->
+    <!-- ========================================================== -->
+    <div id="part-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 id="part-modal-title" class="text-lg font-bold flex items-center space-x-2">
+                    <i data-lucide="wrench" class="w-5 h-5 text-emerald-400"></i>
+                    <span>パーツ 新規登録</span>
+                </h3>
+                <button onclick="closePartModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="part-form" onsubmit="savePartItem(event)" class="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="part-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録番号（自動採番）</label>
+                        <input type="text" id="part-reg-number" readonly 
+                            class="w-full px-3 py-2 bg-slate-200/70 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-700 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">メーカー <span class="text-rose-500">*</span></label>
+                        <div class="flex space-x-1.5">
+                            <select id="part-maker" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            </select>
+                            <button type="button" onclick="toggleNewMakerInput('part')" class="px-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shrink-0 transition" title="新しいメーカーを追加">
+                                ＋
+                            </button>
+                        </div>
+                        <div id="new-maker-box-part" class="hidden mt-1.5 flex space-x-1">
+                            <input type="text" id="new-maker-input-part" placeholder="新規メーカー名" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMaker('part');}"
+                                class="w-full px-2 py-1 border border-emerald-400 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button type="button" onclick="addCustomMaker('part')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shrink-0">
+                                追加
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">型番</label>
+                        <div class="flex space-x-1.5">
+                            <input type="text" id="part-code" placeholder="例: Z04-9216 / 0336" 
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();lookupPartInfo();}"
+                                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                            <button type="button" id="btn-lookup-part" onclick="lookupPartInfo()" 
+                                class="px-2.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 text-white rounded-lg text-xs font-semibold shrink-0 transition flex items-center space-x-1 shadow-sm" 
+                                title="メーカーと型番から商品名・定価を検索して自動入力">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                                <span>検索</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="part-lookup-status-bar" class="hidden text-xs px-3 py-2 rounded-lg border flex items-center justify-between gap-2"></div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">商品名 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="part-name" required placeholder="例: クハE235-1000 電連 / 密連形TNカプラー(SP・黒・6個入)" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">用途</label>
+                        <input type="text" id="part-usage" placeholder="例: E235系補修・グレードアップ / 汎用連結器交換" 
+                            class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">種別</label>
+                        <input type="text" id="part-type" list="part-type-suggestions" placeholder="例: カプラー, パンタグラフ, 室内灯, 台車, 車輪, インレタ" 
+                            class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                        <datalist id="part-type-suggestions">
+                            <option value="カプラー">
+                            <option value="パンタグラフ">
+                            <option value="室内灯">
+                            <option value="台車">
+                            <option value="車輪">
+                            <option value="動力ユニット">
+                            <option value="クーラー・屋根上機器">
+                            <option value="スカート・床下機器">
+                            <option value="インレタ・ステッカー">
+                            <option value="ライト基板">
+                            <option value="その他">
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">所持数 <span class="text-rose-500">*</span></label>
+                        <input type="number" id="part-qty" min="0" step="1" value="1" required
+                            class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">使用未使用</label>
+                        <select id="part-status" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            <option value="未使用">未使用</option>
+                            <option value="使用中">使用中</option>
+                            <option value="一部使用">一部使用</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">定価</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">¥</span>
+                            <input type="number" id="part-price" min="0" step="1" placeholder="660" 
+                                class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">備考</label>
+                    <textarea id="part-notes" rows="2" placeholder="保管ケース場所、残数詳細など自由に記述" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700">画像貼り付け・カメラ撮影</label>
+                    <div id="part-image-paste-zone" tabindex="0"
+                        class="border-2 border-dashed border-slate-300 hover:border-emerald-500 focus:border-emerald-500 focus:outline-none rounded-xl p-4 text-center bg-slate-50 transition">
+                        <input type="file" id="part-image-file" accept="image/*" class="hidden" onchange="handleImageFileSelect(event)">
+                        <input type="file" id="part-camera-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)">
+                        <div id="part-image-placeholder" class="space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('part-camera-file').click()"
+                                    class="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i data-lucide="camera" class="w-4 h-4"></i>
+                                    <span>カメラで撮影</span>
+                                </button>
+                                <button type="button" onclick="document.getElementById('part-image-file').click()"
+                                    class="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i data-lucide="image-plus" class="w-4 h-4"></i>
+                                    <span>画像を選択</span>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-500">またはこの枠を選択して <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px]">Ctrl+V</kbd> で貼り付け（自動リサイズ保存）</p>
+                        </div>
+                        <div id="part-image-preview-wrapper" class="hidden flex flex-col items-center space-y-2">
+                            <img id="part-image-preview" src="" alt="プレビュー" class="w-48 h-24 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('part-camera-file').click()" class="inline-flex items-center space-x-1 text-xs text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md shadow-sm">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                    <span>撮り直す</span>
+                                </button>
+                                <button type="button" onclick="clearItemImage(event)" class="inline-flex items-center space-x-1 text-xs text-rose-600 hover:text-rose-700 bg-white border border-rose-200 px-2.5 py-1 rounded-md shadow-sm">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>削除</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closePartModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow-sm transition">
+                        保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- モーダル3: レール（線路） 登録・編集モーダル -->
+    <!-- ========================================================== -->
+    <div id="rail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 id="rail-modal-title" class="text-lg font-bold flex items-center space-x-2">
+                    <i data-lucide="git-commit-horizontal" class="w-5 h-5 text-emerald-400"></i>
+                    <span>線路 新規登録</span>
+                </h3>
+                <button onclick="closeRailModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="rail-form" onsubmit="saveRailItem(event)" class="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="rail-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録番号（自動採番）</label>
+                        <input type="text" id="rail-reg-number" readonly 
+                            class="w-full px-3 py-2 bg-slate-200/70 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-700 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">メーカー <span class="text-rose-500">*</span></label>
+                        <div class="flex space-x-1.5">
+                            <select id="rail-maker" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
+                            </select>
+                            <button type="button" onclick="toggleNewMakerInput('rail')" class="px-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shrink-0 transition" title="新しいメーカーを追加">
+                                ＋
+                            </button>
+                        </div>
+                        <div id="new-maker-box-rail" class="hidden mt-1.5 flex space-x-1">
+                            <input type="text" id="new-maker-input-rail" placeholder="新規メーカー名" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMaker('rail');}"
+                                class="w-full px-2 py-1 border border-emerald-400 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button type="button" onclick="addCustomMaker('rail')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shrink-0">
+                                追加
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">型番</label>
+                        <div class="flex space-x-1.5">
+                            <input type="text" id="rail-code" placeholder="例: 20-000 / 1002" 
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();lookupRailInfo();}"
+                                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                            <button type="button" id="btn-lookup-rail" onclick="lookupRailInfo()" 
+                                class="px-2.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 text-white rounded-lg text-xs font-semibold shrink-0 transition flex items-center space-x-1 shadow-sm" 
+                                title="メーカーと型番から商品名・定価を検索して自動入力">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                                <span>検索</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="rail-lookup-status-bar" class="hidden text-xs px-3 py-2 rounded-lg border flex items-center justify-between gap-2"></div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">商品名 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="rail-name" required placeholder="例: 直線線路 248mm (4本入) / ストレートPCレール S280-PC(F)(4本セット)" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">所持数 <span class="text-rose-500">*</span></label>
+                        <input type="number" id="rail-qty" min="0" step="1" value="1" required
+                            class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">定価</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">¥</span>
+                            <input type="number" id="rail-price" min="0" step="1" placeholder="770" 
+                                class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">備考</label>
+                    <textarea id="rail-notes" rows="2" placeholder="ジョイナー状態、通電状況、保管場所など自由に記述" 
+                        class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700">画像貼り付け・カメラ撮影</label>
+                    <div id="rail-image-paste-zone" tabindex="0"
+                        class="border-2 border-dashed border-slate-300 hover:border-emerald-500 focus:border-emerald-500 focus:outline-none rounded-xl p-4 text-center bg-slate-50 transition">
+                        <input type="file" id="rail-image-file" accept="image/*" class="hidden" onchange="handleImageFileSelect(event)">
+                        <input type="file" id="rail-camera-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)">
+                        <div id="rail-image-placeholder" class="space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('rail-camera-file').click()"
+                                    class="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i data-lucide="camera" class="w-4 h-4"></i>
+                                    <span>カメラで撮影</span>
+                                </button>
+                                <button type="button" onclick="document.getElementById('rail-image-file').click()"
+                                    class="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i data-lucide="image-plus" class="w-4 h-4"></i>
+                                    <span>画像を選択</span>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-500">またはこの枠を選択して <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px]">Ctrl+V</kbd> で貼り付け（自動リサイズ保存）</p>
+                        </div>
+                        <div id="rail-image-preview-wrapper" class="hidden flex flex-col items-center space-y-2">
+                            <img id="rail-image-preview" src="" alt="プレビュー" class="w-48 h-24 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('rail-camera-file').click()" class="inline-flex items-center space-x-1 text-xs text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md shadow-sm">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                    <span>撮り直す</span>
+                                </button>
+                                <button type="button" onclick="clearItemImage(event)" class="inline-flex items-center space-x-1 text-xs text-rose-600 hover:text-rose-700 bg-white border border-rose-200 px-2.5 py-1 rounded-md shadow-sm">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>削除</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeRailModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow-sm transition">
+                        保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- カスタム確認ダイアログ -->
     <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
@@ -666,7 +1220,7 @@
                         <div id="gdrive-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></div>
                         <div class="min-w-0">
                             <p id="gdrive-status-title" class="text-xs font-bold text-slate-800">未接続（ローカル保存のみ）</p>
-                            <p id="gdrive-status-sub" class="text-[11px] text-slate-500 truncate">Googleドライブと連携するとPC・スマホ間で自動同期できます</p>
+                            <p id="gdrive-status-sub" class="text-[11px] text-slate-500 truncate">車両・パーツ・線路の全データをマイドライブで同期できます</p>
                         </div>
                     </div>
                     <span id="gdrive-file-badge" class="hidden text-[10px] font-mono bg-sky-100 text-sky-800 px-2 py-0.5 rounded border border-sky-200 shrink-0">同期中</span>
@@ -695,8 +1249,8 @@
                     </p>
                     <ol class="list-decimal list-inside space-y-1 text-[11px]">
                         <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-sky-700 underline font-semibold">Google Cloud Console</a> でプロジェクトを作成し、<strong>「Google Drive API」</strong>を有効化します。</li>
-                        <li>「認証情報」→「OAuth クライアント ID（ウェブアプリケーション）」を作成し、アクセス元のURL（ローカルサーバーやホスティングURL）を「承認済みの JavaScript 生成元」に追加します。</li>
-                        <li>発行された<strong>クライアントID</strong>を上の欄に貼り付けて「設定保存」→「Googleアカウントで接続」を押すと、マイドライブ直下に <code class="bg-white px-1 rounded border">railway_inventory_data.json</code> が自動作成され、以降の変更も自動保存されます。</li>
+                        <li>「認証情報」→「OAuth クライアント ID（ウェブアプリケーション）」を作成し、アクセス元のURL（GitHub Pages URLなど）を「承認済みの JavaScript 生成元」に追加します。</li>
+                        <li>発行された<strong>クライアントID</strong>を上の欄に貼り付けて「設定保存」→「Googleアカウントで接続」を押すと、マイドライブ直下に <code class="bg-white px-1 rounded border">railway_inventory_data.json</code> が自動作成され、車両・パーツ・線路すべての変更が自動保存されます。</li>
                     </ol>
                 </div>
 
@@ -726,8 +1280,7 @@
 
                 <!-- 手動バックアップファイル（Googleドライブ手動配置用） -->
                 <div class="pt-3 border-t border-slate-200 space-y-2">
-                    <p class="text-[11px] font-bold text-slate-600">ファイル直接保存・読込（API設定なしでマイドライブに置く場合）</p>
-                    <p class="text-[11px] text-slate-500">JSONファイルとしてダウンロードしてGoogleドライブアプリに保存し、PC・スマホから読み込むこともできます。</p>
+                    <p class="text-[11px] font-bold text-slate-600">一括JSONバックアップ（車両・パーツ・線路すべてを含む）</p>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" onclick="exportBackupJSON()" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-1.5">
                             <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
@@ -758,12 +1311,17 @@
         const GDRIVE_CLIENT_ID_KEY = 'model_railway_gdrive_client_id_v1';
         const GEMINI_API_KEY_STORAGE = 'model_railway_gemini_api_key_v1';
         const GDRIVE_FILE_NAME = 'railway_inventory_data.json';
-        const DEFAULT_MAKERS = ['KATO', 'TOMIX', 'マイクロエース', 'グリーンマックス', 'ポポンデッタ', '鉄道コレクション', '天賞堂', 'その他'];
+        const DEFAULT_MAKERS = ['KATO', 'TOMIX', 'マイクロエース', 'グリーンマックス', 'ポポンデッタ', '鉄道コレクション', '天賞堂', 'PECO', 'その他'];
+
         let customMakers = [];
         let currentUser = null;
         let authMode = 'login';
+        let activeSystem = 'trains'; // 'trains' | 'parts' | 'rails'
         let currentImageBase64 = '';
-        let inventory = [];
+
+        let inventory = [];       // 車両データ (T-xxxx)
+        let partsInventory = [];  // パーツデータ (P-xxxx)
+        let railsInventory = [];  // レールデータ (R-xxxx)
 
         // Google Drive API 同期状態
         let gdriveTokenClient = null;
@@ -775,15 +1333,23 @@
             return `model_railway_inventory_v2_${currentUser || 'default'}`;
         }
 
+        function getPartsStorageKey() {
+            return `model_railway_parts_v1_${currentUser || 'default'}`;
+        }
+
+        function getRailsStorageKey() {
+            return `model_railway_rails_v1_${currentUser || 'default'}`;
+        }
+
         function getMakersStorageKey() {
             return `model_railway_makers_v1_${currentUser || 'default'}`;
         }
 
-        // サンプル初期データ
+        // サンプル初期データ（車両）
         const sampleData = [
             {
                 id: 'sample-1',
-                regNumber: 'REG-0001',
+                regNumber: 'T-0001',
                 maker: 'KATO',
                 code: '10-1702',
                 name: 'E235系1000番台 横須賀・総武快速線 基本セット(4両)',
@@ -804,7 +1370,7 @@
             },
             {
                 id: 'sample-2',
-                regNumber: 'REG-0002',
+                regNumber: 'T-0002',
                 maker: 'TOMIX',
                 code: '7169',
                 name: 'JR EF64-1000形電気機関車(後期型・復活国鉄色)',
@@ -825,7 +1391,7 @@
             },
             {
                 id: 'sample-3',
-                regNumber: 'REG-0003',
+                regNumber: 'T-0003',
                 maker: 'KATO',
                 code: '2016-9',
                 name: 'D51 標準形',
@@ -843,26 +1409,63 @@
                 date: '2026-02-20',
                 notes: 'コアレスモーター搭載・走行快調',
                 image: ''
+            }
+        ];
+
+        // サンプル初期データ（パーツ）
+        const samplePartsData = [
+            {
+                id: 'part-sample-1',
+                regNumber: 'P-0001',
+                name: '密連形TNカプラー(SP・黒・6個入)',
+                maker: 'TOMIX',
+                code: '0336',
+                usage: 'JR電車全般 連結面交換用',
+                type: 'カプラー',
+                qty: 4,
+                status: '未使用',
+                price: 1650,
+                notes: 'パーツケースA保管',
+                image: ''
             },
             {
-                id: 'sample-4',
-                regNumber: 'REG-0004',
+                id: 'part-sample-2',
+                regNumber: 'P-0002',
+                name: 'LED室内灯クリア 6両分入',
+                maker: 'KATO',
+                code: '11-212',
+                usage: '通勤・特急電車全般',
+                type: '室内灯',
+                qty: 2,
+                status: '一部使用',
+                price: 3960,
+                notes: '残り4両分あり',
+                image: ''
+            }
+        ];
+
+        // サンプル初期データ（レール）
+        const sampleRailsData = [
+            {
+                id: 'rail-sample-1',
+                regNumber: 'R-0001',
+                maker: 'KATO',
+                code: '20-000',
+                name: '直線線路 248mm (4本入)',
+                qty: 12,
+                price: 770,
+                notes: 'お座敷レイアウト基本直線用',
+                image: ''
+            },
+            {
+                id: 'rail-sample-2',
+                regNumber: 'R-0002',
                 maker: 'TOMIX',
-                code: '98831',
-                name: 'JR 205系通勤電車(埼京・川越線) 増結用バラシ サハ204',
-                setName: '埼京・川越線 10両編成',
-                price: 2200,
-                type: 'EC',
-                formType: 'バラシ',
-                category: 'JR東日本・6扉車',
-                motor: 'なし',
-                duplicateNo: 1,
-                condition: '中古品',
-                bmt: '未',
-                boxNo: 3,
-                interiorLight: 'なし',
-                date: '2026-03-10',
-                notes: '車番インレタ未貼付',
+                code: '1002',
+                name: 'ストレートPCレール S280-PC(F)(4本セット)',
+                qty: 8,
+                price: 880,
+                notes: '複線高架用予備',
                 image: ''
             }
         ];
@@ -877,7 +1480,71 @@
             refreshIcons();
         });
 
-        // ユーザー管理初期化
+        // ==========================================
+        // システム切替（車両 / パーツ / 線路）
+        // ==========================================
+        function switchSystem(sys) {
+            activeSystem = sys;
+            const systems = ['trains', 'parts', 'rails'];
+            systems.forEach(s => {
+                const sectionEl = document.getElementById(`section-${s}`);
+                const btnEl = document.getElementById(`nav-btn-${s}`);
+                const countEl = document.getElementById(`nav-count-${s}`);
+                if (s === sys) {
+                    if (sectionEl) sectionEl.classList.remove('hidden');
+                    if (btnEl) btnEl.className = 'flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-emerald-600 text-white shadow-sm transition';
+                    if (countEl) countEl.className = 'text-[10px] bg-black/25 px-1.5 py-0.2 rounded-full';
+                } else {
+                    if (sectionEl) sectionEl.classList.add('hidden');
+                    if (btnEl) btnEl.className = 'flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition';
+                    if (countEl) countEl.className = 'text-[10px] bg-slate-700 px-1.5 py-0.2 rounded-full';
+                }
+            });
+            refreshIcons();
+        }
+
+        function updateNavBadges() {
+            const cTrains = document.getElementById('nav-count-trains');
+            const cParts = document.getElementById('nav-count-parts');
+            const cRails = document.getElementById('nav-count-rails');
+            if (cTrains) cTrains.textContent = inventory.length;
+            if (cParts) cParts.textContent = partsInventory.length;
+            if (cRails) cRails.textContent = railsInventory.length;
+        }
+
+        function openActiveModal() {
+            if (activeSystem === 'parts') openPartModal();
+            else if (activeSystem === 'rails') openRailModal();
+            else openModal();
+        }
+
+        function exportActiveCSV() {
+            if (activeSystem === 'parts') exportPartsCSV();
+            else if (activeSystem === 'rails') exportRailsCSV();
+            else exportCSV();
+        }
+
+        function importActiveCSV(event) {
+            if (activeSystem === 'parts') importPartsCSV(event);
+            else if (activeSystem === 'rails') importRailsCSV(event);
+            else importCSV(event);
+        }
+
+        function loadActiveSampleData() {
+            if (activeSystem === 'parts') loadPartsSampleData();
+            else if (activeSystem === 'rails') loadRailsSampleData();
+            else loadSampleData();
+        }
+
+        function confirmClearActiveAll() {
+            if (activeSystem === 'parts') confirmClearPartsAll();
+            else if (activeSystem === 'rails') confirmClearRailsAll();
+            else confirmClearAll();
+        }
+
+        // ==========================================
+        // ユーザー認証管理
+        // ==========================================
         function initUsers() {
             const stored = localStorage.getItem(USERS_STORAGE_KEY);
             if (!stored) {
@@ -966,7 +1633,7 @@
             document.getElementById('current-user-display').textContent = username;
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-wrapper').classList.remove('hidden');
-            loadData();
+            loadAllData();
             refreshIcons();
         }
 
@@ -1045,10 +1712,12 @@
             showToast('パスワードを変更しました');
         }
 
-        // メーカー管理
+        // ==========================================
+        // メーカー管理（3システム共通）
+        // ==========================================
         function getAllMakers() {
             const set = new Set([...DEFAULT_MAKERS, ...customMakers]);
-            inventory.forEach(item => {
+            [...inventory, ...partsInventory, ...railsInventory].forEach(item => {
                 if (item.maker && item.maker.trim()) {
                     set.add(item.maker.trim());
                 }
@@ -1083,33 +1752,37 @@
 
         function renderMakerOptions(selectedMaker = null) {
             const makers = getAllMakers();
-            const itemSelect = document.getElementById('item-maker');
-            const filterSelect = document.getElementById('filter-maker');
+            const modalSelectIds = ['item-maker', 'part-maker', 'rail-maker'];
+            const filterSelectIds = ['filter-maker', 'parts-filter-maker', 'rails-filter-maker'];
 
-            const currentItemVal = selectedMaker || (itemSelect ? itemSelect.value : 'KATO');
-            const currentFilterVal = filterSelect ? filterSelect.value : 'ALL';
-
-            if (itemSelect) {
-                itemSelect.innerHTML = makers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                if (makers.includes(currentItemVal)) {
-                    itemSelect.value = currentItemVal;
+            modalSelectIds.forEach(selId => {
+                const el = document.getElementById(selId);
+                if (!el) return;
+                const currentVal = selectedMaker || el.value || 'KATO';
+                el.innerHTML = makers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (makers.includes(currentVal)) {
+                    el.value = currentVal;
                 }
-            }
+            });
 
-            if (filterSelect) {
-                filterSelect.innerHTML = '<option value="ALL">すべてのメーカー</option>' +
+            filterSelectIds.forEach(selId => {
+                const el = document.getElementById(selId);
+                if (!el) return;
+                const currentVal = el.value || 'ALL';
+                el.innerHTML = '<option value="ALL">すべてのメーカー</option>' +
                     makers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                if (currentFilterVal === 'ALL' || makers.includes(currentFilterVal)) {
-                    filterSelect.value = currentFilterVal;
+                if (currentVal === 'ALL' || makers.includes(currentVal)) {
+                    el.value = currentVal;
                 } else {
-                    filterSelect.value = 'ALL';
+                    el.value = 'ALL';
                 }
-            }
+            });
         }
 
-        function toggleNewMakerInput() {
-            const box = document.getElementById('new-maker-box');
-            const input = document.getElementById('new-maker-input');
+        function toggleNewMakerInput(context = 'train') {
+            const box = document.getElementById(`new-maker-box-${context}`);
+            const input = document.getElementById(`new-maker-input-${context}`);
+            if (!box || !input) return;
             box.classList.toggle('hidden');
             if (!box.classList.contains('hidden')) {
                 input.value = '';
@@ -1117,8 +1790,9 @@
             }
         }
 
-        function addCustomMaker() {
-            const input = document.getElementById('new-maker-input');
+        function addCustomMaker(context = 'train') {
+            const input = document.getElementById(`new-maker-input-${context}`);
+            if (!input) return;
             const newName = input.value.trim();
             if (!newName) {
                 showToast('メーカー名を入力してください');
@@ -1133,14 +1807,19 @@
                 showToast(`メーカー「${newName}」は既に登録されています`);
             }
             renderMakerOptions(newName);
-            document.getElementById('new-maker-box').classList.add('hidden');
+            const targetSelectId = context === 'part' ? 'part-maker' : context === 'rail' ? 'rail-maker' : 'item-maker';
+            const targetSelect = document.getElementById(targetSelectId);
+            if (targetSelect) targetSelect.value = newName;
+            document.getElementById(`new-maker-box-${context}`).classList.add('hidden');
             input.value = '';
         }
 
-        // 自動登録番号採番 (REG-0001形式)
-        function generateNextRegNumber() {
+        // ==========================================
+        // 自動登録番号採番 (T-数値 / P-数値 / R-数値)
+        // ==========================================
+        function generateNextRegNumberByPrefix(list, prefix) {
             let maxNum = 0;
-            inventory.forEach(item => {
+            list.forEach(item => {
                 if (item.regNumber) {
                     const match = String(item.regNumber).match(/(\d+)$/);
                     if (match) {
@@ -1149,14 +1828,36 @@
                     }
                 }
             });
-            return 'REG-' + String(maxNum + 1).padStart(4, '0');
+            return `${prefix}-` + String(maxNum + 1).padStart(4, '0');
         }
 
-        // 画像処理・貼り付け
+        function generateNextRegNumber() {
+            return generateNextRegNumberByPrefix(inventory, 'T');
+        }
+
+        function generateNextPartRegNumber() {
+            return generateNextRegNumberByPrefix(partsInventory, 'P');
+        }
+
+        function generateNextRailRegNumber() {
+            return generateNextRegNumberByPrefix(railsInventory, 'R');
+        }
+
+        // ==========================================
+        // 画像処理・貼り付け（3モーダル共通）
+        // ==========================================
+        function getActiveImagePrefix() {
+            if (!document.getElementById('part-modal').classList.contains('hidden')) return 'part-';
+            if (!document.getElementById('rail-modal').classList.contains('hidden')) return 'rail-';
+            return '';
+        }
+
         function setupImagePasteListener() {
             document.addEventListener('paste', (e) => {
-                const modal = document.getElementById('item-modal');
-                if (modal.classList.contains('hidden')) return;
+                const isTrainOpen = !document.getElementById('item-modal').classList.contains('hidden');
+                const isPartOpen = !document.getElementById('part-modal').classList.contains('hidden');
+                const isRailOpen = !document.getElementById('rail-modal').classList.contains('hidden');
+                if (!isTrainOpen && !isPartOpen && !isRailOpen) return;
 
                 const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
                 if (!items) return;
@@ -1221,10 +1922,12 @@
             img.src = objectUrl;
         }
 
-        function updateImagePreviewUI() {
-            const placeholder = document.getElementById('image-placeholder');
-            const previewWrapper = document.getElementById('image-preview-wrapper');
-            const previewImg = document.getElementById('image-preview');
+        function updateImagePreviewUI(forcedPrefix = null) {
+            const prefix = forcedPrefix !== null ? forcedPrefix : getActiveImagePrefix();
+            const placeholder = document.getElementById(`${prefix}image-placeholder`);
+            const previewWrapper = document.getElementById(`${prefix}image-preview-wrapper`);
+            const previewImg = document.getElementById(`${prefix}image-preview`);
+            if (!placeholder || !previewWrapper || !previewImg) return;
 
             if (currentImageBase64) {
                 previewImg.src = currentImageBase64;
@@ -1238,34 +1941,76 @@
             refreshIcons();
         }
 
-        function clearItemImage(e) {
+        function clearItemImage(e, forcedPrefix = null) {
             if (e) e.stopPropagation();
+            const prefix = forcedPrefix !== null ? forcedPrefix : getActiveImagePrefix();
             currentImageBase64 = '';
-            document.getElementById('item-image-file').value = '';
-            const cameraInput = document.getElementById('item-camera-file');
+            const fileInput = document.getElementById(`${prefix}image-file`);
+            const cameraInput = document.getElementById(`${prefix}camera-file`);
+            if (fileInput) fileInput.value = '';
             if (cameraInput) cameraInput.value = '';
-            updateImagePreviewUI();
+            updateImagePreviewUI(prefix);
         }
 
-        // データ読み込み・保存
-        function loadData() {
+        // ==========================================
+        // データ一括読み込み・保存
+        // ==========================================
+        function loadAllData() {
             loadCustomMakers();
-            const stored = localStorage.getItem(getStorageKey());
-            if (stored) {
+
+            // 1. 車両データ
+            const storedTrains = localStorage.getItem(getStorageKey());
+            if (storedTrains) {
                 try {
-                    inventory = JSON.parse(stored);
-                } catch (e) {
-                    console.error('データの解析に失敗しました', e);
+                    inventory = JSON.parse(storedTrains);
+                } catch {
                     inventory = [...sampleData];
                 }
             } else {
                 inventory = [...sampleData];
-                saveData();
+                localStorage.setItem(getStorageKey(), JSON.stringify(inventory));
             }
+
+            // 2. パーツデータ
+            const storedParts = localStorage.getItem(getPartsStorageKey());
+            if (storedParts) {
+                try {
+                    partsInventory = JSON.parse(storedParts);
+                } catch {
+                    partsInventory = [...samplePartsData];
+                }
+            } else {
+                partsInventory = [...samplePartsData];
+                localStorage.setItem(getPartsStorageKey(), JSON.stringify(partsInventory));
+            }
+
+            // 3. レールデータ
+            const storedRails = localStorage.getItem(getRailsStorageKey());
+            if (storedRails) {
+                try {
+                    railsInventory = JSON.parse(storedRails);
+                } catch {
+                    railsInventory = [...sampleRailsData];
+                }
+            } else {
+                railsInventory = [...sampleRailsData];
+                localStorage.setItem(getRailsStorageKey(), JSON.stringify(railsInventory));
+            }
+
+            refreshAllViews();
+        }
+
+        function refreshAllViews() {
             renderMakerOptions();
             renderBoxOptions();
+            renderPartTypeOptions();
             updateDashboard();
             renderList();
+            updatePartsDashboard();
+            renderPartsList();
+            updateRailsDashboard();
+            renderRailsList();
+            updateNavBadges();
         }
 
         function saveData(skipCloudSync = false) {
@@ -1275,17 +2020,41 @@
                 showToast('保存容量の上限に達しました。画像サイズを減らしてください。');
                 console.error(e);
             }
-            renderMakerOptions();
-            renderBoxOptions();
-            updateDashboard();
-            renderList();
-
+            refreshAllViews();
             if (!skipCloudSync && gdriveAccessToken) {
                 scheduleGDriveAutoSync();
             }
         }
 
-        // Box No.フィルター選択肢の動的生成
+        function savePartsData(skipCloudSync = false) {
+            try {
+                localStorage.setItem(getPartsStorageKey(), JSON.stringify(partsInventory));
+            } catch (e) {
+                showToast('保存容量の上限に達しました。画像サイズを減らしてください。');
+                console.error(e);
+            }
+            refreshAllViews();
+            if (!skipCloudSync && gdriveAccessToken) {
+                scheduleGDriveAutoSync();
+            }
+        }
+
+        function saveRailsData(skipCloudSync = false) {
+            try {
+                localStorage.setItem(getRailsStorageKey(), JSON.stringify(railsInventory));
+            } catch (e) {
+                showToast('保存容量の上限に達しました。画像サイズを減らしてください。');
+                console.error(e);
+            }
+            refreshAllViews();
+            if (!skipCloudSync && gdriveAccessToken) {
+                scheduleGDriveAutoSync();
+            }
+        }
+
+        // ==========================================
+        // 車両システム：表示・操作・CSV
+        // ==========================================
         function renderBoxOptions() {
             const boxSelect = document.getElementById('filter-box');
             if (!boxSelect) return;
@@ -1319,7 +2088,6 @@
             }
         }
 
-        // ダッシュボード集計更新
         function updateDashboard() {
             const totalItems = inventory.length;
             const motorItems = inventory.filter(item => item.motor === 'あり').length;
@@ -1342,7 +2110,6 @@
             });
         }
 
-        // 一覧レンダリング
         function renderList() {
             const search = document.getElementById('filter-search').value.toLowerCase().trim();
             const maker = document.getElementById('filter-maker').value;
@@ -1379,8 +2146,8 @@
             });
 
             filtered.sort((a, b) => {
-                if (sortBy === 'newest') return (b.regNumber || '').localeCompare(a.regNumber || '');
-                if (sortBy === 'oldest') return (a.regNumber || '').localeCompare(b.regNumber || '');
+                if (sortBy === 'newest') return (b.regNumber || '').localeCompare(a.regNumber || '', undefined, { numeric: true });
+                if (sortBy === 'oldest') return (a.regNumber || '').localeCompare(b.regNumber || '', undefined, { numeric: true });
                 if (sortBy === 'box_asc') {
                     const boxA = (a.boxNo !== '' && a.boxNo !== undefined && a.boxNo !== null) ? Number(a.boxNo) : 999999;
                     const boxB = (b.boxNo !== '' && b.boxNo !== undefined && b.boxNo !== null) ? Number(b.boxNo) : 999999;
@@ -1488,7 +2255,6 @@
             refreshIcons();
         }
 
-        // フィルターリセット
         function resetFilters() {
             document.getElementById('filter-search').value = '';
             document.getElementById('filter-maker').value = 'ALL';
@@ -1502,7 +2268,6 @@
             renderList();
         }
 
-        // モーダル操作（新規登録）
         function openModal() {
             document.getElementById('item-form').reset();
             document.getElementById('item-id').value = '';
@@ -1522,13 +2287,13 @@
             document.getElementById('item-box-no').value = '';
             document.getElementById('item-interior-light').value = 'なし';
             renderMakerOptions('KATO');
-            document.getElementById('new-maker-box').classList.add('hidden');
-            hideLookupStatus();
-            clearItemImage();
+            document.getElementById('new-maker-box-train').classList.add('hidden');
+            hideLookupStatus('lookup-status-bar');
+            clearItemImage(null, '');
 
             document.getElementById('modal-title').innerHTML = `
                 <i data-lucide="train-front" class="w-5 h-5 text-emerald-400"></i>
-                <span>新規登録</span>
+                <span>車両 新規登録</span>
             `;
             document.getElementById('item-modal').classList.remove('hidden');
             refreshIcons();
@@ -1538,7 +2303,6 @@
             document.getElementById('item-modal').classList.add('hidden');
         }
 
-        // 編集モーダルを開く
         function editItem(id) {
             const item = inventory.find(i => i.id === id);
             if (!item) return;
@@ -1548,7 +2312,8 @@
             document.getElementById('item-duplicate-no').value = item.duplicateNo || 1;
             document.getElementById('item-date').value = item.date || '';
             renderMakerOptions(item.maker || 'KATO');
-            document.getElementById('new-maker-box').classList.add('hidden');
+            document.getElementById('item-maker').value = item.maker || 'KATO';
+            document.getElementById('new-maker-box-train').classList.add('hidden');
             document.getElementById('item-code').value = item.code || '';
             document.getElementById('item-price').value = item.price || '';
             document.getElementById('item-name').value = item.name || '';
@@ -1562,10 +2327,10 @@
             document.getElementById('item-box-no').value = item.boxNo !== undefined && item.boxNo !== null ? item.boxNo : '';
             document.getElementById('item-interior-light').value = item.interiorLight || 'なし';
             document.getElementById('item-notes').value = item.notes || '';
-            hideLookupStatus();
+            hideLookupStatus('lookup-status-bar');
 
             currentImageBase64 = item.image || '';
-            updateImagePreviewUI();
+            updateImagePreviewUI('');
 
             document.getElementById('modal-title').innerHTML = `
                 <i data-lucide="edit-3" class="w-5 h-5 text-emerald-400"></i>
@@ -1575,7 +2340,6 @@
             refreshIcons();
         }
 
-        // 登録・更新保存
         function saveItem(e) {
             e.preventDefault();
             const id = document.getElementById('item-id').value;
@@ -1611,14 +2375,13 @@
                 }
             } else {
                 inventory.unshift(itemData);
-                showToast(`新規登録しました (${itemData.regNumber})`);
+                showToast(`車両を新規登録しました (${itemData.regNumber})`);
             }
 
             saveData();
             closeModal();
         }
 
-        // 削除確認
         function confirmDeleteItem(id) {
             const item = inventory.find(i => i.id === id);
             if (!item) return;
@@ -1634,15 +2397,15 @@
             );
         }
 
-        // サンプルデータ再読込・全初期化
         function loadSampleData() {
             openConfirmModal(
-                'サンプルデータの読込',
-                '現在の登録データにサンプルデータを追加読込しますか？（既存データは保持されます）',
+                'サンプルデータの読込（車両）',
+                '現在の車両データにサンプルデータを追加読込しますか？（既存データは保持されます）',
                 () => {
                     const existingRegs = new Set(inventory.map(i => i.regNumber));
                     sampleData.forEach((sample, idx) => {
                         const reg = existingRegs.has(sample.regNumber) ? generateNextRegNumber() : sample.regNumber;
+                        existingRegs.add(reg);
                         inventory.push({
                             ...sample,
                             id: 'sample-' + Date.now() + '-' + idx,
@@ -1650,67 +2413,30 @@
                         });
                     });
                     saveData();
-                    showToast('サンプルデータを読み込みました');
+                    showToast('車両サンプルデータを読み込みました');
                 }
             );
         }
 
         function confirmClearAll() {
             openConfirmModal(
-                '全データの初期化',
+                '車両データの初期化',
                 '保存されているすべての車両在庫データを削除して空にします。この操作は元に戻せません。',
                 () => {
                     inventory = [];
                     saveData();
-                    showToast('すべてのデータを初期化しました');
+                    showToast('車両データを初期化しました');
                 }
             );
         }
 
-        // 確認モーダル制御
-        function openConfirmModal(title, message, onConfirm) {
-            document.getElementById('confirm-title').textContent = title;
-            document.getElementById('confirm-message').textContent = message;
-            const execBtn = document.getElementById('confirm-exec-btn');
-            execBtn.onclick = () => {
-                onConfirm();
-                closeConfirmModal();
-            };
-            document.getElementById('confirm-modal').classList.remove('hidden');
-            refreshIcons();
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirm-modal').classList.add('hidden');
-        }
-
-        // トースト通知
-        let toastTimer = null;
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-message').textContent = message;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            if (toastTimer) clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-
-        // CSVエクスポート
+        // 車両CSVエクスポート
         function exportCSV() {
             if (inventory.length === 0) {
-                showToast('エクスポートするデータがありません');
+                showToast('エクスポートする車両データがありません');
                 return;
             }
             const headers = ['登録番号', 'メーカー', '品番', '品名', 'セット名', '定価', '種別', '形態', '分類', '動力', '同一商品番号', '新旧', 'BMT', 'Box No.', '室内灯', '登録日', '備考'];
-            const escapeCSV = (val) => {
-                const str = val === null || val === undefined ? '' : String(val);
-                if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
-                    return '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            };
-
             const rows = inventory.map(item => [
                 item.regNumber || '',
                 item.maker || '',
@@ -1729,23 +2455,993 @@
                 item.interiorLight || 'なし',
                 item.date || '',
                 item.notes || ''
-            ].map(escapeCSV).join(','));
+            ].map(escapeCSVValue).join(','));
 
+            downloadCSVFile(headers, rows, `railway_trains_${currentUser || 'export'}`);
+            showToast(`車両CSVをエクスポートしました (${inventory.length}件)`);
+        }
+
+        // 車両CSVインポート（登録番号自動付加＋空欄の品名・セット名・定価を自動検索補完）
+        function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    let content = e.target.result;
+                    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+                    const rows = parseCSVText(content);
+                    if (rows.length < 2) {
+                        showToast('インポートできるデータ行が見つかりません');
+                        return;
+                    }
+
+                    const header = rows[0].map(h => h.trim());
+                    const hasSetNameCol = header.includes('セット名');
+                    const hasBoxCol = header.includes('Box No.');
+                    let importedCount = 0;
+                    let enrichedCount = 0;
+                    const lookupCache = {};
+
+                    showToast('CSVを取り込んでいます（未入力項目の自動検索補完中）...');
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const cols = rows[i];
+                        if (cols.every(c => !c || !c.trim())) continue;
+
+                        const rawReg = (cols[0] || '').trim();
+                        const regNumber = rawReg || generateNextRegNumber();
+                        const maker = (cols[1] || '').trim() || 'その他';
+                        const code = (cols[2] || '').trim();
+                        let name = (cols[3] || '').trim();
+
+                        const offset = (hasSetNameCol || cols.length >= 17) ? 1 : 0;
+                        let setName = offset === 1 ? (cols[4] || '').trim() : '';
+                        const rawPriceStr = String(cols[4 + offset] || '').replace(/[^\d]/g, '');
+                        let price = rawPriceStr ? parseInt(rawPriceStr, 10) : 0;
+                        const hasPriceInput = rawPriceStr !== '' && price > 0;
+
+                        let type = (cols[5 + offset] || '').trim() || 'EC';
+                        let formType = (cols[6 + offset] || '').trim() || 'セット';
+                        let category = (cols[7 + offset] || '').trim();
+                        const motor = (cols[8 + offset] || '').trim() === 'あり' ? 'あり' : 'なし';
+                        const duplicateNo = parseInt(cols[9 + offset], 10) || 1;
+                        const condition = (cols[10 + offset] || '').trim() === '中古品' ? '中古品' : '新品';
+                        const bmt = ['付', '未', '-'].includes((cols[11 + offset] || '').trim()) ? cols[11 + offset].trim() : '-';
+
+                        let boxNo = '';
+                        let interiorLight = 'なし';
+                        let date = new Date().toISOString().slice(0, 10);
+                        let notes = '';
+
+                        if (hasBoxCol || cols.length >= 16 + offset) {
+                            const rawBox = (cols[12 + offset] || '').trim();
+                            boxNo = rawBox !== '' && !isNaN(Number(rawBox)) ? Number(rawBox) : '';
+                            interiorLight = (cols[13 + offset] || '').trim() === 'あり' ? 'あり' : 'なし';
+                            date = (cols[14 + offset] || '').trim() || date;
+                            notes = (cols[15 + offset] || '').trim();
+                        } else {
+                            date = (cols[12 + offset] || '').trim() || date;
+                            notes = (cols[13 + offset] || '').trim();
+                        }
+
+                        // 品名・セット名・定価のいずれかが空欄で、型番/品番が入力されている場合は検索して補完
+                        const needsLookup = code && (!name || !setName || !hasPriceInput);
+                        if (needsLookup) {
+                            const cacheKey = `train::${maker.toLowerCase()}::${code.toLowerCase()}`;
+                            let fetched = lookupCache[cacheKey];
+                            if (fetched === undefined) {
+                                fetched = await fetchProductMetadataForCSV(maker, code, 'train');
+                                lookupCache[cacheKey] = fetched || null;
+                            }
+                            if (fetched) {
+                                let updated = false;
+                                if (!name && fetched.name) {
+                                    name = fetched.name;
+                                    updated = true;
+                                }
+                                if (!setName && fetched.setName) {
+                                    setName = fetched.setName;
+                                    updated = true;
+                                }
+                                if (!hasPriceInput && fetched.price && Number(fetched.price) > 0) {
+                                    price = Number(fetched.price);
+                                    updated = true;
+                                }
+                                if (!(cols[5 + offset] || '').trim() && ['SL', 'DL', 'EL', 'DC', 'PC', 'EC', 'FC'].includes(fetched.type)) {
+                                    type = fetched.type;
+                                }
+                                if (!(cols[6 + offset] || '').trim() && ['セット', '単品', 'バラシ', 'ASSY組立品'].includes(fetched.formType)) {
+                                    formType = fetched.formType;
+                                }
+                                if (!category && fetched.category) {
+                                    category = fetched.category;
+                                }
+                                if (updated) enrichedCount++;
+                            }
+                        }
+
+                        if (!name && !code) continue;
+                        if (!name) name = `${maker} ${code}`;
+
+                        inventory.unshift({
+                            id: 'csv-' + Date.now() + '-' + i,
+                            regNumber,
+                            maker,
+                            code,
+                            name,
+                            setName,
+                            price,
+                            type,
+                            formType,
+                            category,
+                            motor,
+                            duplicateNo,
+                            condition,
+                            bmt,
+                            boxNo,
+                            interiorLight,
+                            date,
+                            notes,
+                            image: ''
+                        });
+                        importedCount++;
+                    }
+
+                    saveData();
+                    const subMsg = enrichedCount > 0 ? `（うち${enrichedCount}件の空欄を自動検索で補完）` : '';
+                    showToast(`${importedCount}件の車両データをCSVからインポートしました${subMsg}`);
+                } catch (err) {
+                    console.error(err);
+                    showToast('車両CSVの読み込み中にエラーが発生しました');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // ==========================================
+        // パーツシステム：表示・操作・CSV
+        // ==========================================
+        function renderPartTypeOptions() {
+            const selectEl = document.getElementById('parts-filter-type');
+            if (!selectEl) return;
+            const currentVal = selectEl.value || 'ALL';
+            const typeSet = new Set();
+            partsInventory.forEach(item => {
+                if (item.type && item.type.trim()) typeSet.add(item.type.trim());
+            });
+            const sorted = Array.from(typeSet).sort();
+            selectEl.innerHTML = '<option value="ALL">すべての種別</option>' +
+                sorted.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+            if (currentVal === 'ALL' || sorted.includes(currentVal)) {
+                selectEl.value = currentVal;
+            } else {
+                selectEl.value = 'ALL';
+            }
+        }
+
+        function updatePartsDashboard() {
+            const totalTypes = partsInventory.length;
+            const totalQty = partsInventory.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+            const unusedQty = partsInventory
+                .filter(item => item.status === '未使用')
+                .reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+            const totalValue = partsInventory.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.qty) || 0)), 0);
+
+            document.getElementById('parts-stat-types').textContent = totalTypes.toLocaleString();
+            document.getElementById('parts-stat-qty').textContent = totalQty.toLocaleString();
+            document.getElementById('parts-stat-unused').textContent = unusedQty.toLocaleString();
+            document.getElementById('parts-stat-value').textContent = '¥' + totalValue.toLocaleString();
+        }
+
+        function renderPartsList() {
+            const search = document.getElementById('parts-filter-search').value.toLowerCase().trim();
+            const maker = document.getElementById('parts-filter-maker').value;
+            const type = document.getElementById('parts-filter-type').value;
+            const status = document.getElementById('parts-filter-status').value;
+            const sortBy = document.getElementById('parts-sort-by').value;
+
+            let filtered = partsInventory.filter(item => {
+                if (search) {
+                    const target = `${item.regNumber || ''} ${item.name || ''} ${item.code || ''} ${item.maker || ''} ${item.usage || ''} ${item.type || ''} ${item.notes || ''}`.toLowerCase();
+                    if (!target.includes(search)) return false;
+                }
+                if (maker !== 'ALL' && item.maker !== maker) return false;
+                if (type !== 'ALL' && item.type !== type) return false;
+                if (status !== 'ALL' && item.status !== status) return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'newest') return (b.regNumber || '').localeCompare(a.regNumber || '', undefined, { numeric: true });
+                if (sortBy === 'oldest') return (a.regNumber || '').localeCompare(b.regNumber || '', undefined, { numeric: true });
+                if (sortBy === 'maker') return (a.maker || '').localeCompare(b.maker || '');
+                if (sortBy === 'qty_desc') return (Number(b.qty) || 0) - (Number(a.qty) || 0);
+                if (sortBy === 'price_desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
+                return 0;
+            });
+
+            document.getElementById('parts-filtered-count').textContent = `${filtered.length}件`;
+            const grid = document.getElementById('parts-inventory-grid');
+            const emptyState = document.getElementById('parts-empty-state');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(item => {
+                const statusBadge = item.status === '未使用'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : item.status === '一部使用'
+                        ? 'bg-amber-100 text-amber-800 border-amber-200'
+                        : 'bg-slate-100 text-slate-700 border-slate-200';
+
+                return `
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow transition flex flex-col justify-between overflow-hidden">
+                    <div class="p-2.5 space-y-1.5">
+                        <div class="flex items-center justify-between gap-1">
+                            <div class="flex flex-wrap items-center gap-1">
+                                <span class="text-[11px] font-mono font-bold px-1.5 py-0.2 bg-slate-800 text-white rounded">${escapeHTML(item.regNumber || '-')}</span>
+                                ${item.type ? `<span class="text-[11px] font-bold px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">${escapeHTML(item.type)}</span>` : ''}
+                                <span class="text-[11px] font-bold px-1.5 py-0.2 bg-amber-50 text-amber-700 border border-amber-200 rounded">所持: ${Number(item.qty) || 0}</span>
+                            </div>
+                            <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded border shrink-0 ${statusBadge}">${escapeHTML(item.status || '未使用')}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[11px] text-slate-500 font-medium truncate">
+                                    <span class="text-slate-700 font-semibold">${escapeHTML(item.maker)}</span>
+                                    ${item.code ? `<span class="ml-1 font-mono text-[10px] bg-slate-100 px-1 py-0.2 rounded">${escapeHTML(item.code)}</span>` : ''}
+                                </div>
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-800 leading-snug truncate mt-0.5" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</h3>
+                                ${item.usage ? `<p class="text-[11px] text-slate-500 truncate mt-0.2" title="用途: ${escapeHTML(item.usage)}">用途: ${escapeHTML(item.usage)}</p>` : ''}
+                            </div>
+                            ${item.image ? `
+                            <div class="w-24 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                <img src="${item.image}" alt="${escapeHTML(item.name)}" class="w-full h-full object-cover">
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600 pt-1 border-t border-slate-100">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">定価:</span>
+                                <span class="font-semibold text-slate-800">${item.price ? '¥' + Number(item.price).toLocaleString() : '-'}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">小計:</span>
+                                <span class="font-semibold text-slate-700">${item.price ? '¥' + (Number(item.price) * (Number(item.qty) || 0)).toLocaleString() : '-'}</span>
+                            </div>
+                        </div>
+
+                        ${item.notes ? `<p class="text-[11px] text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 truncate" title="${escapeHTML(item.notes)}">${escapeHTML(item.notes)}</p>` : ''}
+                    </div>
+
+                    <div class="bg-slate-50 px-2.5 py-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <div class="flex items-center space-x-1">
+                            <button onclick="adjustPartQty('${item.id}', -1)" class="px-1.5 py-0.2 bg-white hover:bg-slate-200 border border-slate-300 rounded text-slate-700 font-bold" title="所持数を1減らす">-1</button>
+                            <button onclick="adjustPartQty('${item.id}', 1)" class="px-1.5 py-0.2 bg-white hover:bg-slate-200 border border-slate-300 rounded text-slate-700 font-bold" title="所持数を1増やす">+1</button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="editPartItem('${item.id}')" class="text-slate-600 hover:text-emerald-600 font-medium flex items-center space-x-0.5 transition">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                <span>編集</span>
+                            </button>
+                            <button onclick="confirmDeletePartItem('${item.id}')" class="text-slate-400 hover:text-rose-600 font-medium flex items-center space-x-0.5 transition">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                <span>削除</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+        }
+
+        function adjustPartQty(id, delta) {
+            const item = partsInventory.find(i => i.id === id);
+            if (!item) return;
+            item.qty = Math.max(0, (Number(item.qty) || 0) + delta);
+            savePartsData();
+        }
+
+        function resetPartsFilters() {
+            document.getElementById('parts-filter-search').value = '';
+            document.getElementById('parts-filter-maker').value = 'ALL';
+            document.getElementById('parts-filter-type').value = 'ALL';
+            document.getElementById('parts-filter-status').value = 'ALL';
+            renderPartsList();
+        }
+
+        function openPartModal() {
+            document.getElementById('part-form').reset();
+            document.getElementById('part-id').value = '';
+            document.getElementById('part-reg-number').value = generateNextPartRegNumber();
+            renderMakerOptions('KATO');
+            document.getElementById('part-maker').value = 'KATO';
+            document.getElementById('new-maker-box-part').classList.add('hidden');
+            document.getElementById('part-code').value = '';
+            document.getElementById('part-name').value = '';
+            document.getElementById('part-usage').value = '';
+            document.getElementById('part-type').value = '';
+            document.getElementById('part-qty').value = 1;
+            document.getElementById('part-status').value = '未使用';
+            document.getElementById('part-price').value = '';
+            document.getElementById('part-notes').value = '';
+            hideLookupStatus('part-lookup-status-bar');
+            clearItemImage(null, 'part-');
+
+            document.getElementById('part-modal-title').innerHTML = `
+                <i data-lucide="wrench" class="w-5 h-5 text-emerald-400"></i>
+                <span>パーツ 新規登録</span>
+            `;
+            document.getElementById('part-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closePartModal() {
+            document.getElementById('part-modal').classList.add('hidden');
+        }
+
+        function editPartItem(id) {
+            const item = partsInventory.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('part-id').value = item.id;
+            document.getElementById('part-reg-number').value = item.regNumber || generateNextPartRegNumber();
+            renderMakerOptions(item.maker || 'KATO');
+            document.getElementById('part-maker').value = item.maker || 'KATO';
+            document.getElementById('new-maker-box-part').classList.add('hidden');
+            document.getElementById('part-code').value = item.code || '';
+            document.getElementById('part-name').value = item.name || '';
+            document.getElementById('part-usage').value = item.usage || '';
+            document.getElementById('part-type').value = item.type || '';
+            document.getElementById('part-qty').value = item.qty !== undefined ? item.qty : 1;
+            document.getElementById('part-status').value = item.status || '未使用';
+            document.getElementById('part-price').value = item.price || '';
+            document.getElementById('part-notes').value = item.notes || '';
+            hideLookupStatus('part-lookup-status-bar');
+
+            currentImageBase64 = item.image || '';
+            updateImagePreviewUI('part-');
+
+            document.getElementById('part-modal-title').innerHTML = `
+                <i data-lucide="edit-3" class="w-5 h-5 text-emerald-400"></i>
+                <span>パーツ情報の編集 (${escapeHTML(item.regNumber || '')})</span>
+            `;
+            document.getElementById('part-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function savePartItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('part-id').value;
+
+            const itemData = {
+                id: id || 'part-' + Date.now(),
+                regNumber: document.getElementById('part-reg-number').value || generateNextPartRegNumber(),
+                name: document.getElementById('part-name').value.trim(),
+                maker: document.getElementById('part-maker').value,
+                code: document.getElementById('part-code').value.trim(),
+                usage: document.getElementById('part-usage').value.trim(),
+                type: document.getElementById('part-type').value.trim(),
+                qty: parseInt(document.getElementById('part-qty').value, 10) || 0,
+                status: document.getElementById('part-status').value,
+                price: document.getElementById('part-price').value ? Number(document.getElementById('part-price').value) : 0,
+                notes: document.getElementById('part-notes').value.trim(),
+                image: currentImageBase64
+            };
+
+            if (id) {
+                const index = partsInventory.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    partsInventory[index] = itemData;
+                    showToast('パーツ情報を更新しました');
+                }
+            } else {
+                partsInventory.unshift(itemData);
+                showToast(`パーツを新規登録しました (${itemData.regNumber})`);
+            }
+
+            savePartsData();
+            closePartModal();
+        }
+
+        function confirmDeletePartItem(id) {
+            const item = partsInventory.find(i => i.id === id);
+            if (!item) return;
+
+            openConfirmModal(
+                'パーツデータの削除',
+                `「${item.regNumber || ''} ${item.name}」を一覧から削除してもよろしいですか？`,
+                () => {
+                    partsInventory = partsInventory.filter(i => i.id !== id);
+                    savePartsData();
+                    showToast('パーツデータを削除しました');
+                }
+            );
+        }
+
+        function loadPartsSampleData() {
+            openConfirmModal(
+                'サンプルデータの読込（パーツ）',
+                '現在のパーツデータにサンプルデータを追加読込しますか？（既存データは保持されます）',
+                () => {
+                    const existingRegs = new Set(partsInventory.map(i => i.regNumber));
+                    samplePartsData.forEach((sample, idx) => {
+                        const reg = existingRegs.has(sample.regNumber) ? generateNextPartRegNumber() : sample.regNumber;
+                        existingRegs.add(reg);
+                        partsInventory.push({
+                            ...sample,
+                            id: 'part-sample-' + Date.now() + '-' + idx,
+                            regNumber: reg
+                        });
+                    });
+                    savePartsData();
+                    showToast('パーツサンプルデータを読み込みました');
+                }
+            );
+        }
+
+        function confirmClearPartsAll() {
+            openConfirmModal(
+                'パーツデータの初期化',
+                '保存されているすべてのパーツ在庫データを削除して空にします。この操作は元に戻せません。',
+                () => {
+                    partsInventory = [];
+                    savePartsData();
+                    showToast('パーツデータを初期化しました');
+                }
+            );
+        }
+
+        // パーツCSVエクスポート
+        function exportPartsCSV() {
+            if (partsInventory.length === 0) {
+                showToast('エクスポートするパーツデータがありません');
+                return;
+            }
+            const headers = ['登録番号', '商品名', 'メーカー', '型番', '用途', '種別', '所持数', '使用未使用', '定価', '備考'];
+            const rows = partsInventory.map(item => [
+                item.regNumber || '',
+                item.name || '',
+                item.maker || '',
+                item.code || '',
+                item.usage || '',
+                item.type || '',
+                item.qty !== undefined ? item.qty : 0,
+                item.status || '未使用',
+                item.price || 0,
+                item.notes || ''
+            ].map(escapeCSVValue).join(','));
+
+            downloadCSVFile(headers, rows, `railway_parts_${currentUser || 'export'}`);
+            showToast(`パーツCSVをエクスポートしました (${partsInventory.length}件)`);
+        }
+
+        // パーツCSVインポート（登録番号自動付加＋空欄の商品名・定価を自動検索補完）
+        function importPartsCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    let content = e.target.result;
+                    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+                    const rows = parseCSVText(content);
+                    if (rows.length < 2) {
+                        showToast('インポートできるデータ行が見つかりません');
+                        return;
+                    }
+
+                    let importedCount = 0;
+                    let enrichedCount = 0;
+                    const lookupCache = {};
+
+                    showToast('パーツCSVを取り込んでいます（未入力項目の自動検索補完中）...');
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const cols = rows[i];
+                        if (cols.every(c => !c || !c.trim())) continue;
+
+                        const rawReg = (cols[0] || '').trim();
+                        const regNumber = rawReg || generateNextPartRegNumber();
+                        let name = (cols[1] || '').trim();
+                        const maker = (cols[2] || '').trim() || 'その他';
+                        const code = (cols[3] || '').trim();
+                        const usage = (cols[4] || '').trim();
+                        let type = (cols[5] || '').trim();
+                        const qty = parseInt(cols[6], 10) || 0;
+                        const status = ['未使用', '使用中', '一部使用'].includes((cols[7] || '').trim()) ? cols[7].trim() : '未使用';
+                        const rawPriceStr = String(cols[8] || '').replace(/[^\d]/g, '');
+                        let price = rawPriceStr ? parseInt(rawPriceStr, 10) : 0;
+                        const hasPriceInput = rawPriceStr !== '' && price > 0;
+                        const notes = (cols[9] || '').trim();
+
+                        // 商品名・定価のいずれかが空欄で型番がある場合は検索して補完（入力済み箇所は変更しない）
+                        if (code && (!name || !hasPriceInput)) {
+                            const cacheKey = `part::${maker.toLowerCase()}::${code.toLowerCase()}`;
+                            let fetched = lookupCache[cacheKey];
+                            if (fetched === undefined) {
+                                fetched = await fetchProductMetadataForCSV(maker, code, 'part');
+                                lookupCache[cacheKey] = fetched || null;
+                            }
+                            if (fetched) {
+                                let updated = false;
+                                if (!name && fetched.name) {
+                                    name = fetched.name;
+                                    updated = true;
+                                }
+                                if (!hasPriceInput && fetched.price && Number(fetched.price) > 0) {
+                                    price = Number(fetched.price);
+                                    updated = true;
+                                }
+                                if (!type && fetched.partType) {
+                                    type = fetched.partType;
+                                }
+                                if (updated) enrichedCount++;
+                            }
+                        }
+
+                        if (!name && !code) continue;
+                        if (!name) name = `${maker} ${code}`;
+
+                        partsInventory.unshift({
+                            id: 'part-csv-' + Date.now() + '-' + i,
+                            regNumber,
+                            name,
+                            maker,
+                            code,
+                            usage,
+                            type,
+                            qty,
+                            status,
+                            price,
+                            notes,
+                            image: ''
+                        });
+                        importedCount++;
+                    }
+
+                    savePartsData();
+                    const subMsg = enrichedCount > 0 ? `（うち${enrichedCount}件の空欄を自動検索で補完）` : '';
+                    showToast(`${importedCount}件のパーツデータをCSVからインポートしました${subMsg}`);
+                } catch (err) {
+                    console.error(err);
+                    showToast('パーツCSVの読み込み中にエラーが発生しました');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // ==========================================
+        // レール（線路）システム：表示・操作・CSV
+        // ==========================================
+        function updateRailsDashboard() {
+            const totalTypes = railsInventory.length;
+            const totalQty = railsInventory.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+            const totalValue = railsInventory.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.qty) || 0)), 0);
+
+            document.getElementById('rails-stat-types').textContent = totalTypes.toLocaleString();
+            document.getElementById('rails-stat-qty').textContent = totalQty.toLocaleString();
+            document.getElementById('rails-stat-value').textContent = '¥' + totalValue.toLocaleString();
+        }
+
+        function renderRailsList() {
+            const search = document.getElementById('rails-filter-search').value.toLowerCase().trim();
+            const maker = document.getElementById('rails-filter-maker').value;
+            const sortBy = document.getElementById('rails-sort-by').value;
+
+            let filtered = railsInventory.filter(item => {
+                if (search) {
+                    const target = `${item.regNumber || ''} ${item.name || ''} ${item.code || ''} ${item.maker || ''} ${item.notes || ''}`.toLowerCase();
+                    if (!target.includes(search)) return false;
+                }
+                if (maker !== 'ALL' && item.maker !== maker) return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'newest') return (b.regNumber || '').localeCompare(a.regNumber || '', undefined, { numeric: true });
+                if (sortBy === 'oldest') return (a.regNumber || '').localeCompare(b.regNumber || '', undefined, { numeric: true });
+                if (sortBy === 'maker') return (a.maker || '').localeCompare(b.maker || '');
+                if (sortBy === 'qty_desc') return (Number(b.qty) || 0) - (Number(a.qty) || 0);
+                if (sortBy === 'price_desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
+                return 0;
+            });
+
+            document.getElementById('rails-filtered-count').textContent = `${filtered.length}件`;
+            const grid = document.getElementById('rails-inventory-grid');
+            const emptyState = document.getElementById('rails-empty-state');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(item => {
+                return `
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow transition flex flex-col justify-between overflow-hidden">
+                    <div class="p-2.5 space-y-1.5">
+                        <div class="flex items-center justify-between gap-1">
+                            <div class="flex flex-wrap items-center gap-1">
+                                <span class="text-[11px] font-mono font-bold px-1.5 py-0.2 bg-slate-800 text-white rounded">${escapeHTML(item.regNumber || '-')}</span>
+                                <span class="text-[11px] font-semibold px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded">${escapeHTML(item.maker)}</span>
+                                ${item.code ? `<span class="text-[11px] font-mono px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">${escapeHTML(item.code)}</span>` : ''}
+                            </div>
+                            <span class="text-[11px] font-bold px-2 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded shrink-0">所持: ${Number(item.qty) || 0}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-800 leading-snug truncate" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</h3>
+                            </div>
+                            ${item.image ? `
+                            <div class="w-24 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                <img src="${item.image}" alt="${escapeHTML(item.name)}" class="w-full h-full object-cover">
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600 pt-1 border-t border-slate-100">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">定価:</span>
+                                <span class="font-semibold text-slate-800">${item.price ? '¥' + Number(item.price).toLocaleString() : '-'}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-slate-400">小計:</span>
+                                <span class="font-semibold text-slate-700">${item.price ? '¥' + (Number(item.price) * (Number(item.qty) || 0)).toLocaleString() : '-'}</span>
+                            </div>
+                        </div>
+
+                        ${item.notes ? `<p class="text-[11px] text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 truncate" title="${escapeHTML(item.notes)}">${escapeHTML(item.notes)}</p>` : ''}
+                    </div>
+
+                    <div class="bg-slate-50 px-2.5 py-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <div class="flex items-center space-x-1">
+                            <button onclick="adjustRailQty('${item.id}', -1)" class="px-1.5 py-0.2 bg-white hover:bg-slate-200 border border-slate-300 rounded text-slate-700 font-bold" title="所持数を1減らす">-1</button>
+                            <button onclick="adjustRailQty('${item.id}', 1)" class="px-1.5 py-0.2 bg-white hover:bg-slate-200 border border-slate-300 rounded text-slate-700 font-bold" title="所持数を1増やす">+1</button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="editRailItem('${item.id}')" class="text-slate-600 hover:text-emerald-600 font-medium flex items-center space-x-0.5 transition">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                <span>編集</span>
+                            </button>
+                            <button onclick="confirmDeleteRailItem('${item.id}')" class="text-slate-400 hover:text-rose-600 font-medium flex items-center space-x-0.5 transition">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                <span>削除</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+        }
+
+        function adjustRailQty(id, delta) {
+            const item = railsInventory.find(i => i.id === id);
+            if (!item) return;
+            item.qty = Math.max(0, (Number(item.qty) || 0) + delta);
+            saveRailsData();
+        }
+
+        function resetRailsFilters() {
+            document.getElementById('rails-filter-search').value = '';
+            document.getElementById('rails-filter-maker').value = 'ALL';
+            renderRailsList();
+        }
+
+        function openRailModal() {
+            document.getElementById('rail-form').reset();
+            document.getElementById('rail-id').value = '';
+            document.getElementById('rail-reg-number').value = generateNextRailRegNumber();
+            renderMakerOptions('KATO');
+            document.getElementById('rail-maker').value = 'KATO';
+            document.getElementById('new-maker-box-rail').classList.add('hidden');
+            document.getElementById('rail-code').value = '';
+            document.getElementById('rail-name').value = '';
+            document.getElementById('rail-qty').value = 1;
+            document.getElementById('rail-price').value = '';
+            document.getElementById('rail-notes').value = '';
+            hideLookupStatus('rail-lookup-status-bar');
+            clearItemImage(null, 'rail-');
+
+            document.getElementById('rail-modal-title').innerHTML = `
+                <i data-lucide="git-commit-horizontal" class="w-5 h-5 text-emerald-400"></i>
+                <span>線路 新規登録</span>
+            `;
+            document.getElementById('rail-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeRailModal() {
+            document.getElementById('rail-modal').classList.add('hidden');
+        }
+
+        function editRailItem(id) {
+            const item = railsInventory.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('rail-id').value = item.id;
+            document.getElementById('rail-reg-number').value = item.regNumber || generateNextRailRegNumber();
+            renderMakerOptions(item.maker || 'KATO');
+            document.getElementById('rail-maker').value = item.maker || 'KATO';
+            document.getElementById('new-maker-box-rail').classList.add('hidden');
+            document.getElementById('rail-code').value = item.code || '';
+            document.getElementById('rail-name').value = item.name || '';
+            document.getElementById('rail-qty').value = item.qty !== undefined ? item.qty : 1;
+            document.getElementById('rail-price').value = item.price || '';
+            document.getElementById('rail-notes').value = item.notes || '';
+            hideLookupStatus('rail-lookup-status-bar');
+
+            currentImageBase64 = item.image || '';
+            updateImagePreviewUI('rail-');
+
+            document.getElementById('rail-modal-title').innerHTML = `
+                <i data-lucide="edit-3" class="w-5 h-5 text-emerald-400"></i>
+                <span>線路情報の編集 (${escapeHTML(item.regNumber || '')})</span>
+            `;
+            document.getElementById('rail-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function saveRailItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('rail-id').value;
+
+            const itemData = {
+                id: id || 'rail-' + Date.now(),
+                regNumber: document.getElementById('rail-reg-number').value || generateNextRailRegNumber(),
+                maker: document.getElementById('rail-maker').value,
+                code: document.getElementById('rail-code').value.trim(),
+                name: document.getElementById('rail-name').value.trim(),
+                qty: parseInt(document.getElementById('rail-qty').value, 10) || 0,
+                price: document.getElementById('rail-price').value ? Number(document.getElementById('rail-price').value) : 0,
+                notes: document.getElementById('rail-notes').value.trim(),
+                image: currentImageBase64
+            };
+
+            if (id) {
+                const index = railsInventory.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    railsInventory[index] = itemData;
+                    showToast('線路情報を更新しました');
+                }
+            } else {
+                railsInventory.unshift(itemData);
+                showToast(`線路を新規登録しました (${itemData.regNumber})`);
+            }
+
+            saveRailsData();
+            closeRailModal();
+        }
+
+        function confirmDeleteRailItem(id) {
+            const item = railsInventory.find(i => i.id === id);
+            if (!item) return;
+
+            openConfirmModal(
+                '線路データの削除',
+                `「${item.regNumber || ''} ${item.name}」を一覧から削除してもよろしいですか？`,
+                () => {
+                    railsInventory = railsInventory.filter(i => i.id !== id);
+                    saveRailsData();
+                    showToast('線路データを削除しました');
+                }
+            );
+        }
+
+        function loadRailsSampleData() {
+            openConfirmModal(
+                'サンプルデータの読込（線路）',
+                '現在の線路データにサンプルデータを追加読込しますか？（既存データは保持されます）',
+                () => {
+                    const existingRegs = new Set(railsInventory.map(i => i.regNumber));
+                    sampleRailsData.forEach((sample, idx) => {
+                        const reg = existingRegs.has(sample.regNumber) ? generateNextRailRegNumber() : sample.regNumber;
+                        existingRegs.add(reg);
+                        railsInventory.push({
+                            ...sample,
+                            id: 'rail-sample-' + Date.now() + '-' + idx,
+                            regNumber: reg
+                        });
+                    });
+                    saveRailsData();
+                    showToast('線路サンプルデータを読み込みました');
+                }
+            );
+        }
+
+        function confirmClearRailsAll() {
+            openConfirmModal(
+                '線路データの初期化',
+                '保存されているすべての線路在庫データを削除して空にします。この操作は元に戻せません。',
+                () => {
+                    railsInventory = [];
+                    saveRailsData();
+                    showToast('線路データを初期化しました');
+                }
+            );
+        }
+
+        // レールCSVエクスポート
+        function exportRailsCSV() {
+            if (railsInventory.length === 0) {
+                showToast('エクスポートする線路データがありません');
+                return;
+            }
+            const headers = ['登録番号', 'メーカー', '型番', '商品名', '所持数', '定価', '備考'];
+            const rows = railsInventory.map(item => [
+                item.regNumber || '',
+                item.maker || '',
+                item.code || '',
+                item.name || '',
+                item.qty !== undefined ? item.qty : 0,
+                item.price || 0,
+                item.notes || ''
+            ].map(escapeCSVValue).join(','));
+
+            downloadCSVFile(headers, rows, `railway_rails_${currentUser || 'export'}`);
+            showToast(`線路CSVをエクスポートしました (${railsInventory.length}件)`);
+        }
+
+        // レールCSVインポート（登録番号自動付加＋空欄の商品名・定価を自動検索補完）
+        function importRailsCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    let content = e.target.result;
+                    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+                    const rows = parseCSVText(content);
+                    if (rows.length < 2) {
+                        showToast('インポートできるデータ行が見つかりません');
+                        return;
+                    }
+
+                    let importedCount = 0;
+                    let enrichedCount = 0;
+                    const lookupCache = {};
+
+                    showToast('線路CSVを取り込んでいます（未入力項目の自動検索補完中）...');
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const cols = rows[i];
+                        if (cols.every(c => !c || !c.trim())) continue;
+
+                        const rawReg = (cols[0] || '').trim();
+                        const regNumber = rawReg || generateNextRailRegNumber();
+                        const maker = (cols[1] || '').trim() || 'その他';
+                        const code = (cols[2] || '').trim();
+                        let name = (cols[3] || '').trim();
+                        const qty = parseInt(cols[4], 10) || 0;
+                        const rawPriceStr = String(cols[5] || '').replace(/[^\d]/g, '');
+                        let price = rawPriceStr ? parseInt(rawPriceStr, 10) : 0;
+                        const hasPriceInput = rawPriceStr !== '' && price > 0;
+                        const notes = (cols[6] || '').trim();
+
+                        // 商品名・定価のいずれかが空欄で型番がある場合は検索して補完（入力済み箇所は変更しない）
+                        if (code && (!name || !hasPriceInput)) {
+                            const cacheKey = `rail::${maker.toLowerCase()}::${code.toLowerCase()}`;
+                            let fetched = lookupCache[cacheKey];
+                            if (fetched === undefined) {
+                                fetched = await fetchProductMetadataForCSV(maker, code, 'rail');
+                                lookupCache[cacheKey] = fetched || null;
+                            }
+                            if (fetched) {
+                                let updated = false;
+                                if (!name && fetched.name) {
+                                    name = fetched.name;
+                                    updated = true;
+                                }
+                                if (!hasPriceInput && fetched.price && Number(fetched.price) > 0) {
+                                    price = Number(fetched.price);
+                                    updated = true;
+                                }
+                                if (updated) enrichedCount++;
+                            }
+                        }
+
+                        if (!name && !code) continue;
+                        if (!name) name = `${maker} ${code}`;
+
+                        railsInventory.unshift({
+                            id: 'rail-csv-' + Date.now() + '-' + i,
+                            regNumber,
+                            maker,
+                            code,
+                            name,
+                            qty,
+                            price,
+                            notes,
+                            image: ''
+                        });
+                        importedCount++;
+                    }
+
+                    saveRailsData();
+                    const subMsg = enrichedCount > 0 ? `（うち${enrichedCount}件の空欄を自動検索で補完）` : '';
+                    showToast(`${importedCount}件の線路データをCSVからインポートしました${subMsg}`);
+                } catch (err) {
+                    console.error(err);
+                    showToast('線路CSVの読み込み中にエラーが発生しました');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // ==========================================
+        // 共通ユーティリティ（確認モーダル・トースト・CSV）
+        // ==========================================
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            const execBtn = document.getElementById('confirm-exec-btn');
+            execBtn.onclick = () => {
+                onConfirm();
+                closeConfirmModal();
+            };
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        let toastTimer = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeCSVValue(val) {
+            const str = val === null || val === undefined ? '' : String(val);
+            if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+
+        function downloadCSVFile(headers, rows, filenamePrefix) {
             const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             const today = new Date().toISOString().slice(0, 10);
             a.href = url;
-            a.download = `railway_inventory_${currentUser || 'export'}_${today}.csv`;
+            a.download = `${filenamePrefix}_${today}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast(`CSVをエクスポートしました (${inventory.length}件)`);
         }
 
-        // CSVパーサー
         function parseCSVText(text) {
             const rows = [];
             let currentRow = [];
@@ -1794,103 +3490,6 @@
             return rows.filter(r => r.some(cell => cell.trim() !== ''));
         }
 
-        // CSVインポート
-        function importCSV(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    let content = e.target.result;
-                    if (content.charCodeAt(0) === 0xFEFF) {
-                        content = content.slice(1);
-                    }
-                    const rows = parseCSVText(content);
-                    if (rows.length < 2) {
-                        showToast('インポートできるデータ行が見つかりません');
-                        return;
-                    }
-
-                    const header = rows[0].map(h => h.trim());
-                    const hasSetNameCol = header.includes('セット名');
-                    const hasBoxCol = header.includes('Box No.');
-                    let importedCount = 0;
-
-                    for (let i = 1; i < rows.length; i++) {
-                        const cols = rows[i];
-                        if (cols.length < 4) continue;
-
-                        const regNumber = (cols[0] || '').trim() || generateNextRegNumber();
-                        const maker = (cols[1] || '').trim() || 'その他';
-                        const code = (cols[2] || '').trim();
-                        const name = (cols[3] || '').trim();
-                        if (!name) continue;
-
-                        const offset = (hasSetNameCol || cols.length >= 17) ? 1 : 0;
-                        const setName = offset === 1 ? (cols[4] || '').trim() : '';
-                        const price = parseInt(String(cols[4 + offset] || '0').replace(/[^\d]/g, ''), 10) || 0;
-                        const type = (cols[5 + offset] || '').trim() || 'EC';
-                        const formType = (cols[6 + offset] || '').trim() || 'セット';
-                        const category = (cols[7 + offset] || '').trim();
-                        const motor = (cols[8 + offset] || '').trim() === 'あり' ? 'あり' : 'なし';
-                        const duplicateNo = parseInt(cols[9 + offset], 10) || 1;
-                        const condition = (cols[10 + offset] || '').trim() === '中古品' ? '中古品' : '新品';
-                        const bmt = ['付', '未', '-'].includes((cols[11 + offset] || '').trim()) ? cols[11 + offset].trim() : '-';
-
-                        let boxNo = '';
-                        let interiorLight = 'なし';
-                        let date = new Date().toISOString().slice(0, 10);
-                        let notes = '';
-
-                        if (hasBoxCol || cols.length >= 16 + offset) {
-                            const rawBox = (cols[12 + offset] || '').trim();
-                            boxNo = rawBox !== '' && !isNaN(Number(rawBox)) ? Number(rawBox) : '';
-                            interiorLight = (cols[13 + offset] || '').trim() === 'あり' ? 'あり' : 'なし';
-                            date = (cols[14 + offset] || '').trim() || date;
-                            notes = (cols[15 + offset] || '').trim();
-                        } else {
-                            date = (cols[12 + offset] || '').trim() || date;
-                            notes = (cols[13 + offset] || '').trim();
-                        }
-
-                        inventory.unshift({
-                            id: 'csv-' + Date.now() + '-' + i,
-                            regNumber,
-                            maker,
-                            code,
-                            name,
-                            setName,
-                            price,
-                            type,
-                            formType,
-                            category,
-                            motor,
-                            duplicateNo,
-                            condition,
-                            bmt,
-                            boxNo,
-                            interiorLight,
-                            date,
-                            notes,
-                            image: ''
-                        });
-                        importedCount++;
-                    }
-
-                    saveData();
-                    showToast(`${importedCount}件のデータをCSVからインポートしました`);
-                } catch (err) {
-                    console.error(err);
-                    showToast('CSVの読み込み中にエラーが発生しました');
-                } finally {
-                    event.target.value = '';
-                }
-            };
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        // XSS対策エスケープ
         function escapeHTML(str) {
             if (str === null || str === undefined) return '';
             return String(str)
@@ -1901,9 +3500,11 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // 品番検索ステータス表示制御
-        function showLookupStatus(type, htmlContent) {
-            const bar = document.getElementById('lookup-status-bar');
+        // ==========================================
+        // 品番・型番検索（車両・パーツ・線路共通）
+        // ==========================================
+        function showLookupStatus(type, htmlContent, barId = 'lookup-status-bar') {
+            const bar = document.getElementById(barId);
             if (!bar) return;
             bar.classList.remove('hidden', 'bg-blue-50', 'border-blue-200', 'text-blue-700', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-700', 'bg-amber-50', 'border-amber-200', 'text-amber-700', 'bg-rose-50', 'border-rose-200', 'text-rose-700');
             if (type === 'loading') {
@@ -1918,79 +3519,68 @@
             bar.innerHTML = htmlContent;
         }
 
-        function hideLookupStatus() {
-            const bar = document.getElementById('lookup-status-bar');
+        function hideLookupStatus(barId = 'lookup-status-bar') {
+            const bar = document.getElementById(barId);
             if (bar) {
                 bar.classList.add('hidden');
                 bar.innerHTML = '';
             }
         }
 
-        // メーカーと品番から品名・定価を検索して自動入力
-        async function lookupProductInfo() {
-            const maker = document.getElementById('item-maker').value.trim();
-            const code = document.getElementById('item-code').value.trim();
+        // 共通製品情報フェッチ関数（モーダル検索・CSVインポート補完の両方で使用）
+        async function fetchProductMetadataForCSV(maker, code, domain = 'train') {
+            if (!code) return null;
 
-            if (!code) {
-                showLookupStatus('warn', `<span>品番を入力してから「検索」ボタンを押してください。</span>`);
-                document.getElementById('item-code').focus();
-                return;
+            // 1. まずローカルの既存データに同一メーカー・型番があれば参照
+            const sourceList = domain === 'part' ? partsInventory : domain === 'rail' ? railsInventory : inventory;
+            const existingMatch = sourceList.find(i =>
+                (i.maker || '').toLowerCase() === maker.toLowerCase() &&
+                (i.code || '').toLowerCase() === code.toLowerCase() &&
+                i.name
+            );
+            if (existingMatch && existingMatch.name && existingMatch.price > 0) {
+                return {
+                    name: existingMatch.name,
+                    setName: existingMatch.setName || '',
+                    price: existingMatch.price,
+                    type: existingMatch.type || 'EC',
+                    formType: existingMatch.formType || 'セット',
+                    category: existingMatch.category || '',
+                    partType: existingMatch.type || ''
+                };
             }
 
-            // 既存の在籍データに同じメーカー・品番があればまずチェック
-            const existingMatch = inventory.find(i =>
-                (i.maker || '').toLowerCase() === maker.toLowerCase() &&
-                (i.code || '').toLowerCase() === code.toLowerCase()
-            );
+            // 2. Gemini API (Google Search Grounding) での検索
+            const apiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
-            const btn = document.getElementById('btn-lookup-product');
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>検索中</span>`;
-            refreshIcons();
+            let domainPrompt = '';
+            if (domain === 'part') {
+                domainPrompt = `鉄道模型（Nゲージ・HOゲージ等）の補修パーツ・オプションパーツの製品情報を検索してください。
+メーカー: ${maker}
+型番: ${code}
 
-            showLookupStatus('loading', `<div class="flex items-center space-x-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i><span>「${escapeHTML(maker)} ${escapeHTML(code)}」の製品情報を検索しています...</span></div>`);
-            refreshIcons();
+該当パーツの「正式な商品名」「メーカー希望小売価格（定価・税込の半角数字のみ）」「パーツ種別（カプラー, パンタグラフ, 室内灯, 台車, 車輪, 動力ユニット, インレタ・ステッカー, ライト基板, その他 など）」を以下のJSON形式のみで返してください。見つからない場合は found: false としてください。
+{"found": true, "name": "商品名", "price": 660, "partType": "カプラー"}`;
+            } else if (domain === 'rail') {
+                domainPrompt = `鉄道模型（Nゲージ・HOゲージ等）の線路・レール・制御機器の製品情報を検索してください。
+メーカー: ${maker}
+型番: ${code}
 
-            const applyProductResult = (data, sourceLabel = '自動入力完了') => {
-                document.getElementById('item-name').value = data.name;
-                if (data.price && !isNaN(Number(data.price))) {
-                    document.getElementById('item-price').value = Number(data.price);
-                }
-                if (['SL', 'DL', 'EL', 'DC', 'PC', 'EC', 'FC'].includes(data.type)) {
-                    document.getElementById('item-type').value = data.type;
-                }
-                if (['セット', '単品', 'バラシ', 'ASSY組立品'].includes(data.formType)) {
-                    document.getElementById('item-form-type').value = data.formType;
-                }
-                if (data.category && !document.getElementById('item-category').value) {
-                    document.getElementById('item-category').value = data.category;
-                }
-
-                const priceLabel = data.price ? ` / 定価: ¥${Number(data.price).toLocaleString()}` : '';
-                showLookupStatus('success', `
-                    <div class="flex items-center space-x-1.5 truncate">
-                        <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
-                        <span class="truncate">${escapeHTML(sourceLabel)}: <strong>${escapeHTML(data.name)}</strong>${priceLabel}</span>
-                    </div>
-                    <button type="button" onclick="hideLookupStatus()" class="text-emerald-700 hover:text-emerald-900 shrink-0 underline">閉じる</button>
-                `);
-                refreshIcons();
-                showToast('品名と定価を自動入力しました');
-            };
-
-            try {
-                // 1. Gemini API (Google Search Grounding) での検索（指数バックオフ付き）
-                const apiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-                const prompt = `鉄道模型（Nゲージ・HOゲージ等）の製品情報を検索してください。
+該当製品の「正式な商品名」「メーカー希望小売価格（定価・税込の半角数字のみ）」を以下のJSON形式のみで返してください。見つからない場合は found: false としてください。
+{"found": true, "name": "商品名", "price": 770}`;
+            } else {
+                domainPrompt = `鉄道模型（Nゲージ・HOゲージ等）の車両製品情報を検索してください。
 メーカー: ${maker}
 品番: ${code}
 
-該当製品の「正式な品名」「メーカー希望小売価格（定価・税込の半角数字のみ）」「種別（SL, DL, EL, DC, PC, EC, FC のいずれか1つ）」「形態（セット, 単品, バラシ, ASSY組立品 のいずれか1つ）」「分類（例: 通勤形, 特急形, 電気機関車など）」を以下のJSON形式のみで返してください。見つからない場合は found: false としてください。
-{"found": true, "name": "製品名", "price": 15400, "type": "EC", "formType": "セット", "category": "分類"}`;
+該当製品の「正式な品名」「セット名・編成名（分かる場合）」「メーカー希望小売価格（定価・税込の半角数字のみ）」「種別（SL, DL, EL, DC, PC, EC, FC のいずれか1つ）」「形態（セット, 単品, バラシ, ASSY組立品 のいずれか1つ）」「分類（例: 通勤形, 特急形, 電気機関車など）」を以下のJSON形式のみで返してください。見つからない場合は found: false としてください。
+{"found": true, "name": "製品名", "setName": "編成・セット名", "price": 15400, "type": "EC", "formType": "セット", "category": "分類"}`;
+            }
 
+            try {
                 const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
+                    contents: [{ parts: [{ text: domainPrompt }] }],
                     tools: [{ google_search: {} }]
                 };
 
@@ -2017,62 +3607,153 @@
                     if (jsonMatch) {
                         const parsed = JSON.parse(jsonMatch[0]);
                         if (parsed && parsed.found && parsed.name) {
-                            applyProductResult(parsed, 'Web検索から自動入力');
-                            return;
+                            return parsed;
                         }
                     }
                 }
+            } catch (e) {
+                console.warn('Gemini lookup fallback:', e);
+            }
 
-                // 2. 外部公開環境（APIキー未設定時など）向けのフォールバック検索（Yahoo!ショッピング等の公開検索API・在籍データ照合）
-                if (existingMatch) {
-                    applyProductResult(existingMatch, '登録済みデータから引用');
+            // 3. フォールバック検索（公開検索プロキシ・在籍データ）
+            if (existingMatch) {
+                return {
+                    name: existingMatch.name,
+                    setName: existingMatch.setName || '',
+                    price: existingMatch.price || 0,
+                    type: existingMatch.type || 'EC',
+                    formType: existingMatch.formType || 'セット',
+                    category: existingMatch.category || '',
+                    partType: existingMatch.type || ''
+                };
+            }
+
+            return await fallbackProductSearch(maker, code, domain);
+        }
+
+        // 車両モーダル用検索
+        async function lookupProductInfo() {
+            await executeModalProductLookup({
+                domain: 'train',
+                makerId: 'item-maker',
+                codeId: 'item-code',
+                btnId: 'btn-lookup-product',
+                barId: 'lookup-status-bar',
+                onApply: (data) => {
+                    document.getElementById('item-name').value = data.name;
+                    if (data.setName && !document.getElementById('item-set-name').value) {
+                        document.getElementById('item-set-name').value = data.setName;
+                    }
+                    if (data.price && !isNaN(Number(data.price))) {
+                        document.getElementById('item-price').value = Number(data.price);
+                    }
+                    if (['SL', 'DL', 'EL', 'DC', 'PC', 'EC', 'FC'].includes(data.type)) {
+                        document.getElementById('item-type').value = data.type;
+                    }
+                    if (['セット', '単品', 'バラシ', 'ASSY組立品'].includes(data.formType)) {
+                        document.getElementById('item-form-type').value = data.formType;
+                    }
+                    if (data.category && !document.getElementById('item-category').value) {
+                        document.getElementById('item-category').value = data.category;
+                    }
+                }
+            });
+        }
+
+        // パーツモーダル用検索
+        async function lookupPartInfo() {
+            await executeModalProductLookup({
+                domain: 'part',
+                makerId: 'part-maker',
+                codeId: 'part-code',
+                btnId: 'btn-lookup-part',
+                barId: 'part-lookup-status-bar',
+                onApply: (data) => {
+                    document.getElementById('part-name').value = data.name;
+                    if (data.price && !isNaN(Number(data.price))) {
+                        document.getElementById('part-price').value = Number(data.price);
+                    }
+                    if (data.partType && !document.getElementById('part-type').value) {
+                        document.getElementById('part-type').value = data.partType;
+                    }
+                }
+            });
+        }
+
+        // レールモーダル用検索
+        async function lookupRailInfo() {
+            await executeModalProductLookup({
+                domain: 'rail',
+                makerId: 'rail-maker',
+                codeId: 'rail-code',
+                btnId: 'btn-lookup-rail',
+                barId: 'rail-lookup-status-bar',
+                onApply: (data) => {
+                    document.getElementById('rail-name').value = data.name;
+                    if (data.price && !isNaN(Number(data.price))) {
+                        document.getElementById('rail-price').value = Number(data.price);
+                    }
+                }
+            });
+        }
+
+        async function executeModalProductLookup({ domain, makerId, codeId, btnId, barId, onApply }) {
+            const maker = document.getElementById(makerId).value.trim();
+            const code = document.getElementById(codeId).value.trim();
+
+            if (!code) {
+                showLookupStatus('warn', `<span>品番・型番を入力してから「検索」ボタンを押してください。</span>`, barId);
+                document.getElementById(codeId).focus();
+                return;
+            }
+
+            const btn = document.getElementById(btnId);
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>検索中</span>`;
+            refreshIcons();
+
+            showLookupStatus('loading', `<div class="flex items-center space-x-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i><span>「${escapeHTML(maker)} ${escapeHTML(code)}」の製品情報を検索しています...</span></div>`, barId);
+            refreshIcons();
+
+            try {
+                const fetched = await fetchProductMetadataForCSV(maker, code, domain);
+                if (fetched && fetched.name) {
+                    onApply(fetched);
+                    const priceLabel = fetched.price ? ` / 定価: ¥${Number(fetched.price).toLocaleString()}` : '';
+                    showLookupStatus('success', `
+                        <div class="flex items-center space-x-1.5 truncate">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
+                            <span class="truncate">自動入力完了: <strong>${escapeHTML(fetched.name)}</strong>${priceLabel}</span>
+                        </div>
+                        <button type="button" onclick="hideLookupStatus('${barId}')" class="text-emerald-700 hover:text-emerald-900 shrink-0 underline">閉じる</button>
+                    `, barId);
+                    refreshIcons();
+                    showToast('品名と定価を自動入力しました');
                     return;
                 }
 
-                const fallbackData = await fallbackProductSearch(maker, code);
-                if (fallbackData) {
-                    applyProductResult(fallbackData, 'Web検索候補から自動入力');
-                    return;
-                }
-
-                // 見つからなかった場合（APIキー未設定の外部環境の場合は設定案内も表示）
+                const apiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
                 const isExternalHost = !window.location.hostname.includes('googleusercontent.com') && !apiKey;
+                const retryFn = domain === 'part' ? 'lookupPartInfo()' : domain === 'rail' ? 'lookupRailInfo()' : 'lookupProductInfo()';
                 if (isExternalHost) {
                     showLookupStatus('warn', `
                         <div class="space-y-1.5 w-full">
-                            <p>公開検索データベースに該当品番が見つかりませんでした（AI精密検索を使う場合は下の欄に無料APIキーを設定できます）。</p>
+                            <p>公開検索データベースに該当型番が見つかりませんでした（AI精密検索を使う場合は下の欄に無料APIキーを設定できます）。</p>
                             <div class="flex flex-wrap items-center gap-1.5">
-                                <input type="password" id="inline-gemini-key" placeholder="Gemini APIキー (AIza...) を入力して保存" class="flex-1 min-w-[180px] px-2 py-1 bg-white border border-amber-300 rounded text-xs">
-                                <button type="button" onclick="saveInlineGeminiKey()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold">キー保存して再検索</button>
+                                <input type="password" id="inline-gemini-key-${domain}" placeholder="Gemini APIキー (AIza...) を入力して保存" class="flex-1 min-w-[180px] px-2 py-1 bg-white border border-amber-300 rounded text-xs">
+                                <button type="button" onclick="saveInlineGeminiKey('${domain}')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold">キー保存して再検索</button>
                                 <a href="https://www.google.com/search?q=${encodeURIComponent(maker + ' ' + code + ' 鉄道模型 定価')}" target="_blank" rel="noopener" class="px-2 py-1 bg-white border border-amber-300 text-amber-800 rounded text-xs underline">Googleで検索 ↗</a>
                             </div>
                         </div>
-                    `);
+                    `, barId);
                 } else {
                     showLookupStatus('warn', `
                         <span>該当する製品情報が見つかりませんでした。</span>
-                        <a href="https://www.google.com/search?q=${encodeURIComponent(maker + ' ' + code + ' 鉄道模型 定価')}" target="_blank" rel="noopener" class="text-amber-800 font-semibold underline shrink-0">Googleで検索 ↗</a>
-                    `);
-                }
-            } catch (err) {
-                if (existingMatch) {
-                    applyProductResult(existingMatch, '登録済みデータから引用');
-                } else {
-                    const fallbackData = await fallbackProductSearch(maker, code);
-                    if (fallbackData) {
-                        applyProductResult(fallbackData, 'Web検索候補から自動入力');
-                    } else {
-                        showLookupStatus('warn', `
-                            <div class="space-y-1.5 w-full">
-                                <p>公開検索データベースに該当品番が見つかりませんでした（AI精密検索を使う場合は無料APIキーを設定できます）。</p>
-                                <div class="flex flex-wrap items-center gap-1.5">
-                                    <input type="password" id="inline-gemini-key" placeholder="Gemini APIキー (AIza...) を入力" class="flex-1 min-w-[180px] px-2 py-1 bg-white border border-amber-300 rounded text-xs">
-                                    <button type="button" onclick="saveInlineGeminiKey()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold">キー保存して再検索</button>
-                                    <a href="https://www.google.com/search?q=${encodeURIComponent(maker + ' ' + code + ' 鉄道模型 定価')}" target="_blank" rel="noopener" class="px-2 py-1 bg-white border border-amber-300 text-amber-800 rounded text-xs underline">Googleで開く ↗</a>
-                                </div>
-                            </div>
-                        `);
-                    }
+                        <div class="flex items-center space-x-2 shrink-0">
+                            <button type="button" onclick="${retryFn}" class="text-amber-800 underline">再試行</button>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(maker + ' ' + code + ' 鉄道模型 定価')}" target="_blank" rel="noopener" class="text-amber-800 font-semibold underline">Googleで検索 ↗</a>
+                        </div>
+                    `, barId);
                 }
             } finally {
                 btn.disabled = false;
@@ -2081,8 +3762,8 @@
             }
         }
 
-        function saveInlineGeminiKey() {
-            const input = document.getElementById('inline-gemini-key');
+        function saveInlineGeminiKey(domain = 'train') {
+            const input = document.getElementById(`inline-gemini-key-${domain}`);
             if (!input) return;
             const key = input.value.trim();
             if (!key) {
@@ -2091,15 +3772,17 @@
             }
             localStorage.setItem(GEMINI_API_KEY_STORAGE, key);
             showToast('Gemini APIキーを保存しました');
-            lookupProductInfo();
+            if (domain === 'part') lookupPartInfo();
+            else if (domain === 'rail') lookupRailInfo();
+            else lookupProductInfo();
         }
 
-        // 外部公開環境向けフォールバック検索（APIキー不要・複数ソース検索）
-        async function fallbackProductSearch(maker, code) {
+        // 外部公開環境向けフォールバック検索（APIキー不要）
+        async function fallbackProductSearch(maker, code, domain = 'train') {
             const normalizedCode = code.trim();
-            const searchQuery = `${maker} ${normalizedCode} 鉄道模型`;
+            const keyword = domain === 'part' ? 'パーツ 鉄道模型' : domain === 'rail' ? 'レール 線路 鉄道模型' : '鉄道模型';
+            const searchQuery = `${maker} ${normalizedCode} ${keyword}`;
 
-            // ソース1: 公開検索プロキシ経由で製品ページタイトル・定価を抽出
             try {
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(searchQuery + ' 定価'))}`;
                 const res = await fetch(proxyUrl);
@@ -2117,29 +3800,27 @@
                         const combined = `${titleText} ${snippetText}`;
 
                         if (combined.toLowerCase().includes(normalizedCode.toLowerCase())) {
-                            // タイトルから不要なサイト名（「 - 鉄道模型...」「 | ホビーサーチ...」など）を除去
                             let cleanName = titleText
                                 .replace(/\s*[\|\-–—]\s*(鉄道模型|ホビーサーチ|ヨドバシ|Amazon|楽天市場|Joshin|ポポンデッタ|ビッグビィ|あみあみ|Nゲージ|HOゲージ).*$/i, '')
                                 .replace(new RegExp(`^${maker}\\s*`, 'i'), '')
                                 .replace(new RegExp(`^${normalizedCode}\\s*`, 'i'), '')
                                 .trim();
 
-                            if (!cleanName || cleanName.length < 3) {
+                            if (!cleanName || cleanName.length < 2) {
                                 cleanName = titleText;
                             }
 
-                            // 定価・希望小売価格の抽出
                             const pricePatterns = [
-                                /(?:定価|希望小売価格|メーカー希望小売価格)[：:\s]*[¥￥]?\s*([\d,]{3,7})\s*円?/i,
-                                /[¥￥]\s*([\d,]{4,7})/,
-                                /([\d,]{4,7})\s*円/
+                                /(?:定価|希望小売価格|メーカー希望小売価格)[：:\s]*[¥￥]?\s*([\d,]{2,7})\s*円?/i,
+                                /[¥￥]\s*([\d,]{3,7})/,
+                                /([\d,]{3,7})\s*円/
                             ];
                             let extractedPrice = 0;
                             for (const pat of pricePatterns) {
                                 const m = combined.match(pat);
                                 if (m && m[1]) {
                                     const num = parseInt(m[1].replace(/,/g, ''), 10);
-                                    if (num >= 500 && num <= 500000) {
+                                    if (num >= 100 && num <= 500000) {
                                         extractedPrice = num;
                                         break;
                                     }
@@ -2159,12 +3840,23 @@
                                 : /ASSY/i.test(cleanName) ? 'ASSY組立品'
                                 : '単品';
 
+                            const guessPartType = /カプラー/i.test(cleanName) ? 'カプラー'
+                                : /パンタ/i.test(cleanName) ? 'パンタグラフ'
+                                : /室内灯/i.test(cleanName) ? '室内灯'
+                                : /台車/i.test(cleanName) ? '台車'
+                                : /車輪/i.test(cleanName) ? '車輪'
+                                : /動力/i.test(cleanName) ? '動力ユニット'
+                                : /インレタ|ステッカー|シール/i.test(cleanName) ? 'インレタ・ステッカー'
+                                : '';
+
                             return {
                                 name: cleanName,
+                                setName: '',
                                 price: extractedPrice,
                                 type: guessType,
                                 formType: guessForm,
-                                category: ''
+                                category: '',
+                                partType: guessPartType
                             };
                         }
                     }
@@ -2173,32 +3865,11 @@
                 console.warn('Fallback proxy search warning:', e);
             }
 
-            // ソース2: DuckDuckGo Instant Answer API
-            try {
-                const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json&no_html=1&skip_disambig=1`);
-                if (res.ok) {
-                    const data = await res.json();
-                    const heading = (data.Heading || '').trim();
-                    const abstractText = (data.AbstractText || '').trim();
-                    if (heading && heading.toLowerCase().includes(normalizedCode.toLowerCase())) {
-                        const priceMatch = abstractText.match(/([\d,]{4,6})\s*円/);
-                        const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
-                        return {
-                            name: heading,
-                            price: price,
-                            type: normalizedCode.startsWith('20') ? 'SL' : normalizedCode.startsWith('71') || normalizedCode.startsWith('30') ? 'EL' : 'EC',
-                            formType: heading.includes('セット') ? 'セット' : '単品',
-                            category: ''
-                        };
-                    }
-                }
-            } catch {}
-
             return null;
         }
 
         // ==========================================
-        // Googleマイドライブ連携・自動同期機能
+        // Googleマイドライブ連携・自動同期機能（3システム一括）
         // ==========================================
         function initGDriveUI() {
             const savedClientId = localStorage.getItem(GDRIVE_CLIENT_ID_KEY) || '';
@@ -2273,7 +3944,7 @@
                 if (headerLabel) headerLabel.textContent = 'Googleドライブ';
                 if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0';
                 if (statusTitle) statusTitle.textContent = '未接続（ローカル保存のみ）';
-                if (statusSub) statusSub.textContent = 'Googleドライブと連携するとPC・スマホ間で自動同期できます';
+                if (statusSub) statusSub.textContent = '車両・パーツ・線路の全データをマイドライブで同期できます';
                 if (fileBadge) fileBadge.classList.add('hidden');
                 if (btnConnect) btnConnect.classList.remove('hidden');
                 if (btnDisconnect) btnDisconnect.classList.add('hidden');
@@ -2383,14 +4054,25 @@
                 if (!res.ok) throw new Error('マイドライブからのデータ読み込みに失敗しました');
 
                 const payload = await res.json();
-                if (payload && Array.isArray(payload.inventory)) {
-                    inventory = payload.inventory;
+                if (payload) {
+                    if (Array.isArray(payload.inventory)) {
+                        inventory = payload.inventory;
+                        localStorage.setItem(getStorageKey(), JSON.stringify(inventory));
+                    }
+                    if (Array.isArray(payload.partsInventory)) {
+                        partsInventory = payload.partsInventory;
+                        localStorage.setItem(getPartsStorageKey(), JSON.stringify(partsInventory));
+                    }
+                    if (Array.isArray(payload.railsInventory)) {
+                        railsInventory = payload.railsInventory;
+                        localStorage.setItem(getRailsStorageKey(), JSON.stringify(railsInventory));
+                    }
                     if (Array.isArray(payload.customMakers)) {
                         customMakers = payload.customMakers;
                         localStorage.setItem(getMakersStorageKey(), JSON.stringify(customMakers));
                     }
-                    saveData(true);
-                    if (notify) showToast(`マイドライブから最新データを読み込みました（${inventory.length}件）`);
+                    refreshAllViews();
+                    if (notify) showToast(`マイドライブから読込完了（車両${inventory.length} / パーツ${partsInventory.length} / 線路${railsInventory.length}）`);
                 }
                 updateGDriveStatusUI();
             } catch (err) {
@@ -2410,11 +4092,13 @@
                 }
 
                 const payloadObj = {
-                    version: 1,
+                    version: 2,
                     updatedAt: new Date().toISOString(),
                     user: currentUser || 'default',
                     customMakers,
-                    inventory
+                    inventory,
+                    partsInventory,
+                    railsInventory
                 };
                 const jsonString = JSON.stringify(payloadObj);
 
@@ -2460,7 +4144,7 @@
                     gdriveFileId = savedMeta.id;
                 }
                 updateGDriveStatusUI();
-                if (notify) showToast(`Googleマイドライブに保存しました（${inventory.length}件）`);
+                if (notify) showToast(`Googleマイドライブに保存しました（車両${inventory.length} / パーツ${partsInventory.length} / 線路${railsInventory.length}）`);
             } catch (err) {
                 console.error(err);
                 if (notify) showToast(err.message || 'マイドライブ保存エラー');
@@ -2476,14 +4160,16 @@
             }, 1200);
         }
 
-        // 手動バックアップJSON出力・読込
+        // 手動バックアップJSON出力・読込（3システム一括）
         function exportBackupJSON() {
             const payloadObj = {
-                version: 1,
+                version: 2,
                 exportedAt: new Date().toISOString(),
                 user: currentUser || 'default',
                 customMakers,
-                inventory
+                inventory,
+                partsInventory,
+                railsInventory
             };
             const blob = new Blob([JSON.stringify(payloadObj, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -2504,16 +4190,28 @@
             reader.onload = (e) => {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    if (parsed && Array.isArray(parsed.inventory)) {
-                        inventory = parsed.inventory;
+                    if (parsed && (Array.isArray(parsed.inventory) || Array.isArray(parsed.partsInventory) || Array.isArray(parsed.railsInventory))) {
+                        if (Array.isArray(parsed.inventory)) {
+                            inventory = parsed.inventory;
+                            localStorage.setItem(getStorageKey(), JSON.stringify(inventory));
+                        }
+                        if (Array.isArray(parsed.partsInventory)) {
+                            partsInventory = parsed.partsInventory;
+                            localStorage.setItem(getPartsStorageKey(), JSON.stringify(partsInventory));
+                        }
+                        if (Array.isArray(parsed.railsInventory)) {
+                            railsInventory = parsed.railsInventory;
+                            localStorage.setItem(getRailsStorageKey(), JSON.stringify(railsInventory));
+                        }
                         if (Array.isArray(parsed.customMakers)) {
                             customMakers = parsed.customMakers;
                             localStorage.setItem(getMakersStorageKey(), JSON.stringify(customMakers));
                         }
-                        saveData();
-                        showToast(`JSONから${inventory.length}件のデータを読み込みました`);
+                        refreshAllViews();
+                        if (gdriveAccessToken) scheduleGDriveAutoSync();
+                        showToast(`JSONから読込完了（車両${inventory.length} / パーツ${partsInventory.length} / 線路${railsInventory.length}）`);
                     } else {
-                        showToast('有効な車両在庫JSONファイルではありません');
+                        showToast('有効な在庫JSONファイルではありません');
                     }
                 } catch (err) {
                     console.error(err);
