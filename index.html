@@ -219,11 +219,11 @@
 
                     <!-- CSV入出力＆新規登録アクション -->
                     <div class="flex items-center gap-2 shrink-0">
-                        <label class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border border-slate-600" title="CSV一括インポート（未入力の品名・定価は自動検索）">
+                        <input type="file" id="csv-import-input" accept=".csv,text/csv" class="hidden" onchange="importCSV(event)">
+                        <button type="button" onclick="triggerCSVImport()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border border-slate-600" title="CSV一括インポート（未入力の品名・定価は自動検索）">
                             <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-400"></i>
                             <span class="hidden md:inline">CSV読込</span>
-                            <input type="file" id="csv-import-input" accept=".csv" class="hidden" onchange="importCSV(event)">
-                        </label>
+                        </button>
                         <button type="button" onclick="exportCSV()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border border-slate-600" title="現在のカテゴリのデータをCSV出力">
                             <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i>
                             <span class="hidden md:inline">CSV出力</span>
@@ -3097,34 +3097,64 @@
             return utf8Text.replace(/^\uFEFF/, '');
         }
 
+        function triggerCSVImport() {
+            const input = document.getElementById('csv-import-input');
+            if (!input) return;
+            input.value = '';
+            input.click();
+        }
+
+        function readFileAsArrayBuffer(file) {
+            if (file.arrayBuffer) {
+                return file.arrayBuffer();
+            }
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('ファイルの読み込みに失敗しました'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
         async function importCSV(event) {
-            const file = event.target.files[0];
+            const inputEl = event.target;
+            const file = inputEl.files && inputEl.files[0];
             if (!file) return;
 
             try {
-                const buffer = await file.arrayBuffer();
+                const buffer = await readFileAsArrayBuffer(file);
                 const text = decodeCSVBuffer(buffer);
                 const rows = parseCSVText(text);
 
                 if (rows.length === 0) {
                     showToast('CSVファイルに有効なデータがありません', 'warning');
-                    event.target.value = '';
+                    inputEl.value = '';
                     return;
                 }
 
-                showToast('CSVを取り込み中（未入力項目は自動検索・採番します）...', 'info');
+                showToast(`CSV（${rows.length}行）を解析しています...`, 'info');
 
                 // ヘッダー判定
                 const firstRowJoined = rows[0].join(',');
-                const hasHeader = /登録番号|品名|商品名|メーカー|品番|型番|定価/.test(firstRowJoined);
+                const hasHeader = /登録番号|品名|商品名|メーカー|品番|型番|定価|所持数|数量|備考/.test(firstRowJoined);
                 const headerRow = hasHeader ? rows[0] : [];
                 const dataRows = hasHeader ? rows.slice(1) : rows;
+
+                if (dataRows.length === 0) {
+                    showToast('ヘッダー行のみでデータ行がありません', 'warning');
+                    inputEl.value = '';
+                    return;
+                }
 
                 const findCol = (keywords, fallbackIdx) => {
                     if (!hasHeader) return fallbackIdx;
                     const idx = headerRow.findIndex(h => keywords.some(k => h.includes(k)));
-                    return idx !== -1 ? idx : fallbackIdx;
+                    return idx !== -1 ? idx : -1;
                 };
+
+                // 一括インポート時は外部検索が連続タイムアウトしないよう件数制限＆高速フォールバック
+                let webLookupCount = 0;
+                const MAX_WEB_LOOKUPS = 10;
 
                 const parsedCandidates = [];
 
@@ -3147,14 +3177,36 @@
                     const idxNotes = findCol(['備考'], 15);
 
                     for (const r of dataRows) {
-                        const rawRegNo = (r[idxReg] || '').trim();
-                        const maker = (r[idxMaker] || '').trim() || 'KATO';
-                        const partNo = (r[idxPartNo] || '').trim();
-                        let name = (r[idxName] || '').trim();
-                        let setName = (r[idxSetName] || '').trim();
-                        let price = parseInt(String(r[idxPrice] || '').replace(/[^\d]/g, ''), 10) || 0;
+                        const getCell = (idx) => (idx >= 0 && idx < r.length) ? (r[idx] || '').trim() : '';
 
-                        if (partNo && (!name || !setName || price === 0)) {
+                        // 列数が少ない簡易CSV（例: メーカー,品番,品名 など）への自動適応
+                        let rawRegNo = getCell(idxReg);
+                        let maker = getCell(idxMaker);
+                        let partNo = getCell(idxPartNo);
+                        let name = getCell(idxName);
+                        let setName = getCell(idxSetName);
+                        let price = parseInt(getCell(idxPrice).replace(/[^\d]/g, ''), 10) || 0;
+
+                        if (!hasHeader && r.length <= 4) {
+                            // 簡易フォーマット推測: [メーカー, 品番, 品名, 定価] or [品番, 品名]
+                            if (r.length === 2) {
+                                maker = 'KATO';
+                                partNo = r[0] || '';
+                                name = r[1] || '';
+                                rawRegNo = '';
+                            } else {
+                                maker = r[0] || 'KATO';
+                                partNo = r[1] || '';
+                                name = r[2] || '';
+                                price = parseInt((r[3] || '').replace(/[^\d]/g, ''), 10) || 0;
+                                rawRegNo = '';
+                            }
+                        }
+
+                        maker = maker || 'KATO';
+
+                        if (partNo && (!name || !setName || price === 0) && webLookupCount < MAX_WEB_LOOKUPS) {
+                            webLookupCount++;
                             const meta = await fetchProductMetadata(maker, partNo, '鉄道模型 Nゲージ 車両');
                             if (meta) {
                                 if (!name && meta.name) name = meta.name;
@@ -3165,29 +3217,29 @@
 
                         if (!name && !partNo) continue;
 
-                        const rawType = (r[idxType] || '').trim();
-                        const rawForm = (r[idxForm] || '').trim();
-                        const rawBmt = (r[idxBmt] || '').trim();
-                        const rawCond = (r[idxCond] || '').trim();
+                        const rawType = getCell(idxType);
+                        const rawForm = getCell(idxForm);
+                        const rawBmt = getCell(idxBmt);
+                        const rawCond = getCell(idxCond);
 
                         const candidate = {
                             id: 'tr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
                             regNo: rawRegNo,
-                            regDate: (r[idxDate] || '').trim() || new Date().toISOString().split('T')[0],
+                            regDate: getCell(idxDate) || new Date().toISOString().split('T')[0],
                             maker,
                             partNo,
                             name: name || `${maker} ${partNo}`,
                             setName,
                             type: ['SL', 'DL', 'EL', 'DC', 'PC', 'EC', 'FC'].includes(rawType) ? rawType : 'EC',
                             formType: ['セット', '単品', 'バラシ', 'ASSY組立品'].includes(rawForm) ? rawForm : 'セット',
-                            category: (r[idxCat] || '').trim(),
-                            sameItemNo: (r[idxSameNo] || '').trim() || '1',
-                            motor: normalizeTrainMotor((r[idxMotor] || '').trim()),
+                            category: getCell(idxCat),
+                            sameItemNo: getCell(idxSameNo) || '1',
+                            motor: normalizeTrainMotor(getCell(idxMotor)),
                             bmt: ['付', '未', '-'].includes(rawBmt) ? rawBmt : '-',
                             condition: ['新品', '中古品'].includes(rawCond) ? rawCond : '新品',
-                            boxNo: (r[idxBox] || '').trim(),
+                            boxNo: getCell(idxBox),
                             price,
-                            notes: (r[idxNotes] || '').trim(),
+                            notes: getCell(idxNotes),
                             image: ''
                         };
                         const isDup = trainInventory.some(existing => isExactMatchTrain(existing, candidate));
@@ -3206,13 +3258,23 @@
                     const idxNotes = findCol(['備考'], 9);
 
                     for (const r of dataRows) {
-                        const rawRegNo = (r[idxReg] || '').trim();
-                        let name = (r[idxName] || '').trim();
-                        const maker = (r[idxMaker] || '').trim() || 'KATO';
-                        const modelNo = (r[idxModel] || '').trim();
-                        let price = parseInt(String(r[idxPrice] || '').replace(/[^\d]/g, ''), 10) || 0;
+                        const getCell = (idx) => (idx >= 0 && idx < r.length) ? (r[idx] || '').trim() : '';
+                        let rawRegNo = getCell(idxReg);
+                        let name = getCell(idxName);
+                        let maker = getCell(idxMaker) || 'KATO';
+                        let modelNo = getCell(idxModel);
+                        let price = parseInt(getCell(idxPrice).replace(/[^\d]/g, ''), 10) || 0;
 
-                        if (modelNo && (!name || price === 0)) {
+                        if (!hasHeader && r.length <= 4) {
+                            maker = r[0] || 'KATO';
+                            modelNo = r[1] || '';
+                            name = r[2] || '';
+                            price = parseInt((r[3] || '').replace(/[^\d]/g, ''), 10) || 0;
+                            rawRegNo = '';
+                        }
+
+                        if (modelNo && (!name || price === 0) && webLookupCount < MAX_WEB_LOOKUPS) {
+                            webLookupCount++;
                             const meta = await fetchProductMetadata(maker, modelNo, '鉄道模型 Nゲージ パーツ');
                             if (meta) {
                                 if (!name && meta.name) name = meta.name;
@@ -3222,19 +3284,19 @@
 
                         if (!name && !modelNo) continue;
 
-                        const rawStatus = (r[idxStatus] || '').trim();
+                        const rawStatus = getCell(idxStatus);
                         const candidate = {
                             id: 'pt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
                             regNo: rawRegNo,
                             name: name || `${maker} ${modelNo}`,
                             maker,
                             modelNo,
-                            usage: (r[idxUsage] || '').trim(),
-                            type: (r[idxType] || '').trim() || 'カプラー',
-                            qty: parseInt(String(r[idxQty] || '1').replace(/[^\d]/g, ''), 10) || 1,
+                            usage: getCell(idxUsage),
+                            type: getCell(idxType) || 'カプラー',
+                            qty: parseInt(getCell(idxQty || '1').replace(/[^\d]/g, ''), 10) || 1,
                             status: ['未使用', '一部使用', '使用中'].includes(rawStatus) ? rawStatus : '未使用',
                             price,
-                            notes: (r[idxNotes] || '').trim(),
+                            notes: getCell(idxNotes),
                             image: ''
                         };
                         const isDup = partInventory.some(existing => isExactMatchPart(existing, candidate));
@@ -3250,13 +3312,23 @@
                     const idxNotes = findCol(['備考'], 6);
 
                     for (const r of dataRows) {
-                        const rawRegNo = (r[idxReg] || '').trim();
-                        const maker = (r[idxMaker] || '').trim() || 'KATO';
-                        const modelNo = (r[idxModel] || '').trim();
-                        let name = (r[idxName] || '').trim();
-                        let price = parseInt(String(r[idxPrice] || '').replace(/[^\d]/g, ''), 10) || 0;
+                        const getCell = (idx) => (idx >= 0 && idx < r.length) ? (r[idx] || '').trim() : '';
+                        let rawRegNo = getCell(idxReg);
+                        let maker = getCell(idxMaker) || 'KATO';
+                        let modelNo = getCell(idxModel);
+                        let name = getCell(idxName);
+                        let price = parseInt(getCell(idxPrice).replace(/[^\d]/g, ''), 10) || 0;
 
-                        if (modelNo && (!name || price === 0)) {
+                        if (!hasHeader && r.length <= 4) {
+                            maker = r[0] || 'KATO';
+                            modelNo = r[1] || '';
+                            name = r[2] || '';
+                            price = parseInt((r[3] || '').replace(/[^\d]/g, ''), 10) || 0;
+                            rawRegNo = '';
+                        }
+
+                        if (modelNo && (!name || price === 0) && webLookupCount < MAX_WEB_LOOKUPS) {
+                            webLookupCount++;
                             const meta = await fetchProductMetadata(maker, modelNo, '鉄道模型 Nゲージ レール 線路');
                             if (meta) {
                                 if (!name && meta.name) name = meta.name;
@@ -3272,9 +3344,9 @@
                             maker,
                             modelNo,
                             name: name || `${maker} ${modelNo}`,
-                            qty: parseInt(String(r[idxQty] || '1').replace(/[^\d]/g, ''), 10) || 1,
+                            qty: parseInt(getCell(idxQty || '1').replace(/[^\d]/g, ''), 10) || 1,
                             price,
-                            notes: (r[idxNotes] || '').trim(),
+                            notes: getCell(idxNotes),
                             image: ''
                         };
                         const isDup = railInventory.some(existing => isExactMatchRail(existing, candidate));
@@ -3283,8 +3355,8 @@
                 }
 
                 if (parsedCandidates.length === 0) {
-                    showToast('取り込み可能な有効行が見つかりませんでした', 'warning');
-                    event.target.value = '';
+                    showToast('取り込み可能な有効行が見つかりませんでした。CSVの列構成を確認してください。', 'warning');
+                    inputEl.value = '';
                     return;
                 }
 
@@ -3313,9 +3385,9 @@
                 }
             } catch (err) {
                 console.error('CSV import error:', err);
-                showToast('CSVの読み込み中にエラーが発生しました', 'error');
+                showToast(`CSV読込エラー: ${err.message || '形式を確認してください'}`, 'error');
             } finally {
-                event.target.value = '';
+                inputEl.value = '';
             }
         }
 
