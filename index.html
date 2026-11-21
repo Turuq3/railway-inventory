@@ -2040,11 +2040,11 @@
                 if (isExternalHost) {
                     showLookupStatus('warn', `
                         <div class="space-y-1.5 w-full">
-                            <p>該当製品が見つからないか、外部サイト公開時のAI検索用APIキーが未設定です。</p>
+                            <p>公開検索データベースに該当品番が見つかりませんでした（AI精密検索を使う場合は下の欄に無料APIキーを設定できます）。</p>
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <input type="password" id="inline-gemini-key" placeholder="Gemini APIキー (AIza...) を入力して保存" class="flex-1 min-w-[180px] px-2 py-1 bg-white border border-amber-300 rounded text-xs">
                                 <button type="button" onclick="saveInlineGeminiKey()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold">キー保存して再検索</button>
-                                <a href="https://www.google.com/search?q=${encodeURIComponent(maker + ' ' + code + ' 鉄道模型 定価')}" target="_blank" rel="noopener" class="px-2 py-1 bg-white border border-amber-300 text-amber-800 rounded text-xs underline">Googleで検索</a>
+                                <a href="https://www.google.com/search?q=${encodeURIComponent(maker + ' ' + code + ' 鉄道模型 定価')}" target="_blank" rel="noopener" class="px-2 py-1 bg-white border border-amber-300 text-amber-800 rounded text-xs underline">Googleで検索 ↗</a>
                             </div>
                         </div>
                     `);
@@ -2064,7 +2064,7 @@
                     } else {
                         showLookupStatus('warn', `
                             <div class="space-y-1.5 w-full">
-                                <p>自動検索に接続できませんでした（外部サイトではGemini APIキーの設定が必要です）。</p>
+                                <p>公開検索データベースに該当品番が見つかりませんでした（AI精密検索を使う場合は無料APIキーを設定できます）。</p>
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <input type="password" id="inline-gemini-key" placeholder="Gemini APIキー (AIza...) を入力" class="flex-1 min-w-[180px] px-2 py-1 bg-white border border-amber-300 rounded text-xs">
                                     <button type="button" onclick="saveInlineGeminiKey()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold">キー保存して再検索</button>
@@ -2094,27 +2094,106 @@
             lookupProductInfo();
         }
 
-        // 外部公開環境向けフォールバック検索（公開検索インデックス経由）
+        // 外部公開環境向けフォールバック検索（APIキー不要・複数ソース検索）
         async function fallbackProductSearch(maker, code) {
+            const normalizedCode = code.trim();
+            const searchQuery = `${maker} ${normalizedCode} 鉄道模型`;
+
+            // ソース1: 公開検索プロキシ経由で製品ページタイトル・定価を抽出
             try {
-                const query = encodeURIComponent(`${maker} ${code} 鉄道模型`);
-                const res = await fetch(`https://api.duckduckgo.com/?q=${query}&format=json&no_html=1&skip_disambig=1`);
-                if (!res.ok) return null;
-                const data = await res.json();
-                const heading = (data.Heading || '').trim();
-                const abstractText = (data.AbstractText || '').trim();
-                if (heading && heading.toLowerCase().includes(code.toLowerCase())) {
-                    const priceMatch = abstractText.match(/([\d,]{4,6})\s*円/);
-                    const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
-                    return {
-                        name: heading,
-                        price: price,
-                        type: code.startsWith('20') ? 'SL' : code.startsWith('71') || code.startsWith('30') ? 'EL' : 'EC',
-                        formType: heading.includes('セット') ? 'セット' : '単品',
-                        category: ''
-                    };
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(searchQuery + ' 定価'))}`;
+                const res = await fetch(proxyUrl);
+                if (res.ok) {
+                    const json = await res.json();
+                    const html = json.contents || '';
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const results = Array.from(doc.querySelectorAll('.result'));
+
+                    for (const item of results) {
+                        const titleEl = item.querySelector('.result__a');
+                        const snippetEl = item.querySelector('.result__snippet');
+                        const titleText = (titleEl?.textContent || '').trim();
+                        const snippetText = (snippetEl?.textContent || '').trim();
+                        const combined = `${titleText} ${snippetText}`;
+
+                        if (combined.toLowerCase().includes(normalizedCode.toLowerCase())) {
+                            // タイトルから不要なサイト名（「 - 鉄道模型...」「 | ホビーサーチ...」など）を除去
+                            let cleanName = titleText
+                                .replace(/\s*[\|\-–—]\s*(鉄道模型|ホビーサーチ|ヨドバシ|Amazon|楽天市場|Joshin|ポポンデッタ|ビッグビィ|あみあみ|Nゲージ|HOゲージ).*$/i, '')
+                                .replace(new RegExp(`^${maker}\\s*`, 'i'), '')
+                                .replace(new RegExp(`^${normalizedCode}\\s*`, 'i'), '')
+                                .trim();
+
+                            if (!cleanName || cleanName.length < 3) {
+                                cleanName = titleText;
+                            }
+
+                            // 定価・希望小売価格の抽出
+                            const pricePatterns = [
+                                /(?:定価|希望小売価格|メーカー希望小売価格)[：:\s]*[¥￥]?\s*([\d,]{3,7})\s*円?/i,
+                                /[¥￥]\s*([\d,]{4,7})/,
+                                /([\d,]{4,7})\s*円/
+                            ];
+                            let extractedPrice = 0;
+                            for (const pat of pricePatterns) {
+                                const m = combined.match(pat);
+                                if (m && m[1]) {
+                                    const num = parseInt(m[1].replace(/,/g, ''), 10);
+                                    if (num >= 500 && num <= 500000) {
+                                        extractedPrice = num;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            const guessType = /蒸気|SL|D51|C62|C57|C11/i.test(cleanName) ? 'SL'
+                                : /ディーゼル機関車|DD51|DE10|DF200|DL/i.test(cleanName) ? 'DL'
+                                : /電気機関車|EF\d+|ED\d+|EH\d+|EL/i.test(cleanName) ? 'EL'
+                                : /気動車|キハ|DC/i.test(cleanName) ? 'DC'
+                                : /客車|オハ|スハ|カニ|PC/i.test(cleanName) ? 'PC'
+                                : /貨車|コキ|タキ|ワム|FC/i.test(cleanName) ? 'FC'
+                                : 'EC';
+
+                            const guessForm = /セット/i.test(cleanName) ? 'セット'
+                                : /バラシ/i.test(cleanName) ? 'バラシ'
+                                : /ASSY/i.test(cleanName) ? 'ASSY組立品'
+                                : '単品';
+
+                            return {
+                                name: cleanName,
+                                price: extractedPrice,
+                                type: guessType,
+                                formType: guessForm,
+                                category: ''
+                            };
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Fallback proxy search warning:', e);
+            }
+
+            // ソース2: DuckDuckGo Instant Answer API
+            try {
+                const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json&no_html=1&skip_disambig=1`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const heading = (data.Heading || '').trim();
+                    const abstractText = (data.AbstractText || '').trim();
+                    if (heading && heading.toLowerCase().includes(normalizedCode.toLowerCase())) {
+                        const priceMatch = abstractText.match(/([\d,]{4,6})\s*円/);
+                        const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
+                        return {
+                            name: heading,
+                            price: price,
+                            type: normalizedCode.startsWith('20') ? 'SL' : normalizedCode.startsWith('71') || normalizedCode.startsWith('30') ? 'EL' : 'EC',
+                            formType: heading.includes('セット') ? 'セット' : '単品',
+                            category: ''
+                        };
+                    }
                 }
             } catch {}
+
             return null;
         }
 
