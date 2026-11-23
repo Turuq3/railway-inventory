@@ -54,7 +54,7 @@
                     <i data-lucide="train" class="w-8 h-8 text-white"></i>
                 </div>
                 <h1 class="text-xl font-bold tracking-tight">N在庫管理システム</h1>
-                <p class="text-blue-200 text-xs mt-1 font-mono">Version 1.0.1</p>
+                <p class="text-blue-200 text-xs mt-1 font-mono">Version 1.02</p>
             </div>
 
             <!-- タブ切り替え -->
@@ -158,11 +158,19 @@
                     </div>
                     <div>
                         <h1 class="text-lg sm:text-xl font-bold tracking-tight">N在庫管理システム</h1>
-                        <p class="text-[11px] text-slate-400 font-mono">Version 1.0.1</p>
+                        <p class="text-[11px] text-slate-400 font-mono">Version 1.02</p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2 flex-wrap">
+                    <!-- Googleスプレッドシート表示ボタン（直接ブラウザで開く） -->
+                    <button type="button" onclick="openSpreadsheetFromMenu()" id="gsheets-view-header-btn"
+                        class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition"
+                        title="連携中のGoogleスプレッドシートを別タブで直接表示">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>スプレッドシート表示</span>
+                    </button>
+
                     <!-- Googleスプレッドシート連携ボタン -->
                     <button type="button" onclick="openSheetsModal()" id="gsheets-header-btn"
                         class="flex items-center gap-1.5 bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-100 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-700/80 transition"
@@ -555,7 +563,7 @@
         <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div class="text-xs text-slate-400 font-mono">
-                    N在庫管理システム — Version 1.0.1
+                    N在庫管理システム — Version 1.02
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="confirmDeduplicateAllData()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5" title="車両・パーツ・線路の全項目が完全に一致している重複データを検出して削除します">
@@ -4502,6 +4510,16 @@
             const sheetId = getSavedSpreadsheetId();
             if (!sheetId) {
                 showToast('スプレッドシートIDが未設定です。「新規スプレッドシートを作成」を押してください', 'warning');
+                return;
+            }
+            window.open(`https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/edit`, '_blank', 'noopener,noreferrer');
+        }
+
+        function openSpreadsheetFromMenu() {
+            const sheetId = getSavedSpreadsheetId();
+            if (!sheetId) {
+                openSheetsModal();
+                showToast('表示するスプレッドシートIDを設定するか、新規作成してください', 'warning');
                 return;
             }
             window.open(`https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/edit`, '_blank', 'noopener,noreferrer');
