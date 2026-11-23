@@ -586,6 +586,466 @@
     </div>
 
     <!-- ===================================================================== -->
+    <!-- モーダル1：車両登録・編集モーダル                                        -->
+    <!-- ===================================================================== -->
+    <div id="train-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 my-auto">
+            <div class="px-5 py-3.5 bg-blue-700 text-white flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="train" class="w-5 h-5"></i>
+                    <h3 id="train-modal-title" class="font-bold text-base">新規車両登録</h3>
+                    <span id="train-edit-pos-badge" class="hidden px-2 py-0.5 rounded-full bg-white/20 text-[11px] font-mono"></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div id="train-header-nav-group" class="hidden items-center gap-1 mr-1">
+                        <button type="button" id="train-header-prev-btn" onclick="navigateTrainEdit(-1)" class="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-35 transition" title="前の登録番号へ">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" id="train-header-next-btn" onclick="navigateTrainEdit(1)" class="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-35 transition" title="次の登録番号へ">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="closeTrainModal()" class="text-blue-200 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <form id="train-form" onsubmit="saveTrainItem(event)" class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="train-edit-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録番号 <span class="text-red-500">*</span></label>
+                        <input type="text" id="train-reg-no" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録日</label>
+                        <input type="date" id="train-reg-date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">同一商品番号</label>
+                        <input type="text" id="train-same-item-no" value="1" placeholder="例: 1" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- メーカー＆品番＆自動入力 -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-5">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">メーカー <span class="text-red-500">*</span></label>
+                        <div class="flex gap-1.5">
+                            <select id="train-maker" class="maker-select-target flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                            <button type="button" onclick="openAddMakerModal('train-maker', 'train')" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300" title="新しいメーカーを追加">＋</button>
+                        </div>
+                    </div>
+                    <div class="sm:col-span-4">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">品番</label>
+                        <input type="text" id="train-part-no" placeholder="例: 10-1747" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <button type="button" id="train-lookup-btn" onclick="lookupTrainInfo(false)" class="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            <span>自動検索</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="train-lookup-status" class="hidden"></div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">品名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="train-name" required placeholder="例: 683系4000番台「サンダーバード」" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">セット名</label>
+                        <input type="text" id="train-set-name" placeholder="例: 9両セット" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">種別</label>
+                        <select id="train-type" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="EC">EC (電車)</option>
+                            <option value="DC">DC (気動車)</option>
+                            <option value="PC">PC (客車)</option>
+                            <option value="EL">EL (電気機関車)</option>
+                            <option value="DL">DL (ディーゼル機関車)</option>
+                            <option value="SL">SL (蒸気機関車)</option>
+                            <option value="FC">FC (貨車)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">形態</label>
+                        <select id="train-form-type" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="セット">セット</option>
+                            <option value="単品">単品</option>
+                            <option value="バラシ">バラシ</option>
+                            <option value="ASSY組立品">ASSY組立品</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">分類</label>
+                        <input type="text" id="train-category" placeholder="例: 特急電車 / 新幹線 / 電気機関車" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">動力</label>
+                        <select id="train-motor" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="なし">なし</option>
+                            <option value="あり">あり</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">BMT</label>
+                        <select id="train-bmt" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="-">-</option>
+                            <option value="付">付</option>
+                            <option value="未">未</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">新旧</label>
+                        <select id="train-condition" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="新品">新品</option>
+                            <option value="中古品">中古品</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Box No.</label>
+                        <input type="text" id="train-box-no" placeholder="例: Box 1" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">定価 (円)</label>
+                        <input type="number" id="train-price" min="0" placeholder="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- 灯火類チェック欄 -->
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center gap-5">
+                    <span class="text-xs font-bold text-slate-600">灯火類装備:</span>
+                    <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                        <input type="checkbox" id="train-interior-light" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span>室内灯</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                        <input type="checkbox" id="train-tail-light" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span>尾灯</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                        <input type="checkbox" id="train-head-tail-light" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span>前尾灯照</span>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">備考</label>
+                    <textarea id="train-notes" rows="2" placeholder="付属品・カプラー交換・ロット情報など" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <!-- 画像登録エリア -->
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">車両画像（ファイル選択 または Ctrl+V 貼り付け）</span>
+                        <div class="flex items-center gap-2">
+                            <label class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold cursor-pointer transition">
+                                画像を選択
+                                <input type="file" accept="image/*" class="hidden" onchange="handleImageInput(event, 'train')">
+                            </label>
+                            <button type="button" onclick="clearModalImage('train')" class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold">削除</button>
+                        </div>
+                    </div>
+                    <div class="h-32 rounded-xl border border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden">
+                        <img id="train-image-preview" src="" alt="プレビュー" class="hidden max-h-full object-contain">
+                        <span id="train-image-placeholder" class="text-xs text-slate-400">画像未登録</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-200">
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" id="train-prev-btn" onclick="navigateTrainEdit(-1)" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold disabled:opacity-40">← 前へ</button>
+                        <button type="button" id="train-next-btn" onclick="navigateTrainEdit(1)" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold disabled:opacity-40">次へ →</button>
+                    </div>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" onclick="closeTrainModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">閉じる</button>
+                        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md">保存する</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- モーダル2：パーツ登録・編集モーダル                                      -->
+    <!-- ===================================================================== -->
+    <div id="part-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 my-auto">
+            <div class="px-5 py-3.5 bg-teal-700 text-white flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="wrench" class="w-5 h-5"></i>
+                    <h3 id="part-modal-title" class="font-bold text-base">新規パーツ登録</h3>
+                    <span id="part-edit-pos-badge" class="hidden px-2 py-0.5 rounded-full bg-white/20 text-[11px] font-mono"></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div id="part-header-nav-group" class="hidden items-center gap-1 mr-1">
+                        <button type="button" id="part-header-prev-btn" onclick="navigatePartEdit(-1)" class="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-35 transition" title="前の登録番号へ">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" id="part-header-next-btn" onclick="navigatePartEdit(1)" class="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-35 transition" title="次の登録番号へ">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="closePartModal()" class="text-teal-200 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <form id="part-form" onsubmit="savePartItem(event)" class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="part-edit-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録番号 <span class="text-red-500">*</span></label>
+                        <input type="text" id="part-reg-no" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="sm:col-span-4">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">メーカー</label>
+                        <div class="flex gap-1.5">
+                            <select id="part-maker" class="part-maker-select-target flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
+                            <button type="button" onclick="openAddMakerModal('part-maker', 'part')" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300" title="新しいメーカーを追加">＋</button>
+                        </div>
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">型番</label>
+                        <input type="text" id="part-model-no" placeholder="例: 0336" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="button" id="part-lookup-btn" onclick="lookupPartInfo(false)" class="w-full py-2 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            <span>検索</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="part-lookup-status" class="hidden"></div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">商品名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="part-name" required placeholder="例: 密連形TNカプラー(SP・黒・6個入)" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">種別</label>
+                        <div class="flex gap-1.5">
+                            <select id="part-type" class="part-type-select-target flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
+                            <button type="button" onclick="openAddPartTypeModal()" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300" title="新しい種別を追加">＋</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">用途・対応車種</label>
+                    <input type="text" id="part-usage" placeholder="例: 電車・気動車の連結面交換用" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">所持数</label>
+                        <input type="number" id="part-qty" min="0" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">使用状態</label>
+                        <select id="part-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="未使用">未使用</option>
+                            <option value="一部使用">一部使用</option>
+                            <option value="使用中">使用中</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">定価 (円)</label>
+                        <input type="number" id="part-price" min="0" placeholder="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">備考</label>
+                    <textarea id="part-notes" rows="2" placeholder="保管場所・残数メモなど" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">パーツ画像（ファイル選択 または Ctrl+V 貼り付け）</span>
+                        <div class="flex items-center gap-2">
+                            <label class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold cursor-pointer transition">
+                                画像を選択
+                                <input type="file" accept="image/*" class="hidden" onchange="handleImageInput(event, 'part')">
+                            </label>
+                            <button type="button" onclick="clearModalImage('part')" class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold">削除</button>
+                        </div>
+                    </div>
+                    <div class="h-32 rounded-xl border border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden">
+                        <img id="part-image-preview" src="" alt="プレビュー" class="hidden max-h-full object-contain">
+                        <span id="part-image-placeholder" class="text-xs text-slate-400">画像未登録</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-200">
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" id="part-prev-btn" onclick="navigatePartEdit(-1)" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold disabled:opacity-40">← 前へ</button>
+                        <button type="button" id="part-next-btn" onclick="navigatePartEdit(1)" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold disabled:opacity-40">次へ →</button>
+                    </div>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" onclick="closePartModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">閉じる</button>
+                        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md">保存する</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- モーダル3：線路登録・編集モーダル                                        -->
+    <!-- ===================================================================== -->
+    <div id="rail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-200 my-auto">
+            <div class="px-5 py-3.5 bg-amber-600 text-white flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="git-commit-horizontal" class="w-5 h-5"></i>
+                    <h3 id="rail-modal-title" class="font-bold text-base">新規線路登録</h3>
+                    <span id="rail-edit-pos-badge" class="hidden px-2 py-0.5 rounded-full bg-white/20 text-[11px] font-mono"></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div id="rail-header-nav-group" class="hidden items-center gap-1 mr-1">
+                        <button type="button" id="rail-header-prev-btn" onclick="navigateRailEdit(-1)" class="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-35 transition" title="前の登録番号へ">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" id="rail-header-next-btn" onclick="navigateRailEdit(1)" class="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-35 transition" title="次の登録番号へ">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="closeRailModal()" class="text-amber-100 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <form id="rail-form" onsubmit="saveRailItem(event)" class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="rail-edit-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">登録番号 <span class="text-red-500">*</span></label>
+                        <input type="text" id="rail-reg-no" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div class="sm:col-span-4">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">メーカー</label>
+                        <select id="rail-maker" class="rail-maker-select-target w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">型番</label>
+                        <input type="text" id="rail-model-no" placeholder="例: 20-000" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="button" id="rail-lookup-btn" onclick="lookupRailInfo(false)" class="w-full py-2 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            <span>検索</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="rail-lookup-status" class="hidden"></div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">商品名 <span class="text-red-500">*</span></label>
+                    <input type="text" id="rail-name" required placeholder="例: 直線線路 248mm (4本入)" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">所持本数・個数</label>
+                        <input type="number" id="rail-qty" min="0" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">定価 (円)</label>
+                        <input type="number" id="rail-price" min="0" placeholder="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">備考</label>
+                    <textarea id="rail-notes" rows="2" placeholder="仕様・保管ケース情報など" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">線路画像（ファイル選択 または Ctrl+V 貼り付け）</span>
+                        <div class="flex items-center gap-2">
+                            <label class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold cursor-pointer transition">
+                                画像を選択
+                                <input type="file" accept="image/*" class="hidden" onchange="handleImageInput(event, 'rail')">
+                            </label>
+                            <button type="button" onclick="clearModalImage('rail')" class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold">削除</button>
+                        </div>
+                    </div>
+                    <div class="h-32 rounded-xl border border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden">
+                        <img id="rail-image-preview" src="" alt="プレビュー" class="hidden max-h-full object-contain">
+                        <span id="rail-image-placeholder" class="text-xs text-slate-400">画像未登録</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-200">
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" id="rail-prev-btn" onclick="navigateRailEdit(-1)" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold disabled:opacity-40">← 前へ</button>
+                        <button type="button" id="rail-next-btn" onclick="navigateRailEdit(1)" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold disabled:opacity-40">次へ →</button>
+                    </div>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" onclick="closeRailModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">閉じる</button>
+                        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md">保存する</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- モーダル4：メーカー追加＆パーツ種別追加モーダル                          -->
+    <!-- ===================================================================== -->
+    <div id="maker-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200">
+            <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+                <h3 class="font-bold text-sm">新しいメーカーを追加</h3>
+                <button type="button" onclick="closeAddMakerModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form onsubmit="saveNewMaker(event)" class="p-5 space-y-4">
+                <input type="hidden" id="maker-target-select-id">
+                <input type="hidden" id="maker-target-category">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">メーカー名</label>
+                    <input type="text" id="new-maker-name" required placeholder="メーカー名を入力" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeAddMakerModal()" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">キャンセル</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white">追加する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="part-type-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200">
+            <div class="px-5 py-3.5 bg-teal-800 text-white flex items-center justify-between">
+                <h3 class="font-bold text-sm">新しいパーツ種別を追加</h3>
+                <button type="button" onclick="closeAddPartTypeModal()" class="text-teal-200 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form onsubmit="saveNewPartType(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">種別名</label>
+                    <input type="text" id="new-part-type-name" required placeholder="種別名を入力" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeAddPartTypeModal()" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">キャンセル</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white">追加する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
     <!-- モーダル5：パスワード変更＆各端末同期モーダル                            -->
     <!-- ===================================================================== -->
     <div id="password-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
@@ -638,6 +1098,83 @@
                         <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white">変更を保存して同期</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- モーダル6：アカウント作成パスワード変更モーダル（admin専用）               -->
+    <!-- ===================================================================== -->
+    <div id="creation-password-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200">
+            <div class="px-5 py-3.5 bg-emerald-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-300"></i>
+                    <h3 class="font-bold text-sm">新規アカウント作成用パスワード変更</h3>
+                </div>
+                <button type="button" onclick="closeCreationPasswordModal()" class="text-emerald-200 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form onsubmit="handleChangeCreationPassword(event)" class="p-5 space-y-3.5">
+                <div id="creation-pw-error" class="hidden p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs"></div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">新しい作成用パスワード</label>
+                    <input type="password" id="creation-pw-new" required minlength="4" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">新しい作成用パスワード（確認）</label>
+                    <input type="password" id="creation-pw-confirm" required minlength="4" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeCreationPasswordModal()" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">キャンセル</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white">保存して同期</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- モーダル10：Googleマイドライブ連携モーダル                                -->
+    <!-- ===================================================================== -->
+    <div id="drive-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+            <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="cloud" class="w-5 h-5 text-sky-400"></i>
+                    <h3 class="font-bold text-base">Googleマイドライブ自動同期・バックアップ</h3>
+                </div>
+                <button type="button" onclick="closeDriveModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-sm">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Google OAuth クライアントID</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="gdrive-client-id-input" placeholder="xxxx.apps.googleusercontent.com"
+                            class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button type="button" onclick="saveDriveClientId()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold shrink-0">保存</button>
+                    </div>
+                </div>
+                <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
+                    <input type="checkbox" id="google-auto-connect-drive" onchange="toggleGoogleAutoConnect(this.checked)" class="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" checked>
+                    <span>起動時にGoogleマイドライブへ自動接続する</span>
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button type="button" onclick="connectGoogleDrive()" class="py-2 px-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs">認証・接続</button>
+                    <button type="button" onclick="syncToGoogleDrive(true)" class="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs">ドライブへ保存</button>
+                    <button type="button" onclick="syncFromGoogleDrive(true)" class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs">ドライブから読込</button>
+                </div>
+                <div id="gdrive-sync-log" class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    ステータス: 未接続
+                </div>
+                <div class="pt-3 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
+                    <span class="text-slate-500">ローカルJSONバックアップ:</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="exportAllJSON()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold">JSON出力</button>
+                        <label class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold cursor-pointer">
+                            JSON復元
+                            <input type="file" accept=".json,application/json" class="hidden" onchange="importAllJSON(event)">
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
