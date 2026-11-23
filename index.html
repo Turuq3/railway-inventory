@@ -54,7 +54,7 @@
                     <i data-lucide="train" class="w-8 h-8 text-white"></i>
                 </div>
                 <h1 class="text-xl font-bold tracking-tight">N在庫管理システム</h1>
-                <p class="text-blue-200 text-xs mt-1 font-mono">Version 1.2.0</p>
+                <p class="text-blue-200 text-xs mt-1 font-mono">Version 1.2.1</p>
             </div>
 
             <!-- タブ切り替え -->
@@ -160,7 +160,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg sm:text-xl font-bold tracking-tight">N在庫管理システム</h1>
-                        <p class="text-[11px] text-slate-400 font-mono">Version 1.2.0</p>
+                        <p class="text-[11px] text-slate-400 font-mono">Version 1.2.1</p>
                     </div>
                 </div>
 
@@ -565,7 +565,7 @@
         <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div class="text-xs text-slate-400 font-mono">
-                    N在庫管理システム — Version 1.2.0
+                    N在庫管理システム — Version 1.2.1
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="confirmDeduplicateAllData()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5" title="車両・パーツ・線路の全項目が完全に一致している重複データを検出して削除します">
@@ -612,18 +612,119 @@
             <form id="train-form" onsubmit="saveTrainItem(event)" class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
                 <input type="hidden" id="train-edit-id">
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
+                <!-- 1段目：登録番号・登録日・同一商品番号 -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div class="min-w-0">
                         <label class="block text-xs font-bold text-slate-600 mb-1">登録番号 <span class="text-red-500">*</span></label>
-                        <input type="text" id="train-reg-no" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="train-reg-no" required class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label class="block text-xs font-bold text-slate-600 mb-1">登録日</label>
-                        <input type="date" id="train-reg-date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="date" id="train-reg-date" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">同一商品番号</label>
-                        <input type="text" id="train-same-item-no" value="1" placeholder="例: 1" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">同一商品番号 <span class="text-[10px] font-normal text-blue-600">(自動採番)</span></label>
+                        <input type="text" id="train-same-item-no" value="1" placeholder="例: 1" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- 2段目：メーカー＆品番＆自動検索 -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-5 min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">メーカー <span class="text-red-500">*</span></label>
+                        <div class="flex items-center gap-1.5">
+                            <select id="train-maker" onchange="updateTrainSameItemNoAuto()" class="maker-select-target flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                            <button type="button" onclick="openAddMakerModal('train-maker', 'train')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 shrink-0" title="新しいメーカーを追加">＋</button>
+                        </div>
+                    </div>
+                    <div class="sm:col-span-4 min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">品番</label>
+                        <input type="text" id="train-part-no" oninput="updateTrainSameItemNoAuto()" placeholder="例: 10-1747" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="sm:col-span-3 min-w-0">
+                        <button type="button" id="train-lookup-btn" onclick="lookupTrainInfo(false)" class="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>自動検索</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="train-lookup-status" class="hidden"></div>
+
+                <!-- 3段目：品名＆セット名 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">品名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="train-name" required oninput="updateTrainSameItemNoAuto()" placeholder="例: 683系4000番台「サンダーバード」" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">セット名</label>
+                        <input type="text" id="train-set-name" placeholder="例: 9両セット" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- 4段目：種別・形態・分類 -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-3 min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">種別</label>
+                        <select id="train-type" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="EC">EC (電車)</option>
+                            <option value="DC">DC (気動車)</option>
+                            <option value="PC">PC (客車)</option>
+                            <option value="EL">EL (電気機関車)</option>
+                            <option value="DL">DL (ディーゼル機関車)</option>
+                            <option value="SL">SL (蒸気機関車)</option>
+                            <option value="FC">FC (貨車)</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-4 min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">形態</label>
+                        <select id="train-form-type" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="セット">セット</option>
+                            <option value="単品">単品</option>
+                            <option value="バラシ">バラシ</option>
+                            <option value="ASSY組立品">ASSY組立品</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-5 min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">分類</label>
+                        <input type="text" id="train-category" placeholder="例: 特急電車 / 新幹線" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- 5段目：動力・BMT・新旧・Box No.・定価（重なり防止のため2行構成に分割） -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">動力</label>
+                        <select id="train-motor" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="なし">なし</option>
+                            <option value="あり">あり</option>
+                        </select>
+                    </div>
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">BMT</label>
+                        <select id="train-bmt" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="-">-</option>
+                            <option value="付">付</option>
+                            <option value="未">未</option>
+                        </select>
+                    </div>
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">新旧</label>
+                        <select id="train-condition" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="新品">新品</option>
+                            <option value="中古品">中古品</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Box No.</label>
+                        <input type="text" id="train-box-no" placeholder="例: Box 1" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="min-w-0">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">定価 (円)</label>
+                        <input type="number" id="train-price" min="0" placeholder="0" class="w-full min-w-0 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
 
@@ -2580,6 +2681,48 @@
             refreshIcons();
         }
 
+        // 同名商品（または同一メーカー＋品番）が既にある場合、その中の最大値+1の同一商品番号を算出
+        function computeNextSameItemNo(name, maker = '', partNo = '', excludeId = '') {
+            const cleanName = String(name || '').trim().toLowerCase();
+            const cleanMaker = String(maker || '').trim().toLowerCase();
+            const cleanPartNo = String(partNo || '').trim().toLowerCase();
+
+            if (!cleanName && !cleanPartNo) return '1';
+
+            let maxNo = 0;
+            trainInventory.forEach(item => {
+                if (excludeId && item.id === excludeId) return;
+                const itemName = String(item.name || '').trim().toLowerCase();
+                const itemMaker = String(item.maker || '').trim().toLowerCase();
+                const itemPartNo = String(item.partNo || '').trim().toLowerCase();
+
+                const isSameName = cleanName && itemName === cleanName;
+                const isSameCode = cleanPartNo && itemPartNo === cleanPartNo && (!cleanMaker || !itemMaker || itemMaker === cleanMaker);
+
+                if (isSameName || isSameCode) {
+                    const rawVal = (item.sameItemNo !== undefined && item.sameItemNo !== '') ? item.sameItemNo : (item.carNo || '1');
+                    const num = parseInt(String(rawVal).replace(/[^\d]/g, ''), 10);
+                    if (!isNaN(num) && num > maxNo) {
+                        maxNo = num;
+                    } else if (maxNo === 0) {
+                        maxNo = 1;
+                    }
+                }
+            });
+
+            return String(maxNo + 1);
+        }
+
+        function updateTrainSameItemNoAuto() {
+            const editId = document.getElementById('train-edit-id').value;
+            // 新規登録時のみ自動計算（既存編集時は手動変更を優先）
+            if (editId) return;
+            const name = document.getElementById('train-name').value;
+            const maker = document.getElementById('train-maker').value;
+            const partNo = document.getElementById('train-part-no').value;
+            document.getElementById('train-same-item-no').value = computeNextSameItemNo(name, maker, partNo, '');
+        }
+
         function openTrainModal() {
             document.getElementById('train-modal-title').textContent = '新規車両登録';
             document.getElementById('train-edit-id').value = '';
@@ -3441,6 +3584,7 @@
             if (res.motor === 'あり' || res.motor === 'なし') {
                 document.getElementById('train-motor').value = res.motor;
             }
+            updateTrainSameItemNoAuto();
             if (overwriteAll) {
                 showToast('検索結果の車両情報をフォームへ反映しました', 'success');
             }
