@@ -54,7 +54,7 @@
                     <i data-lucide="train" class="w-8 h-8 text-white"></i>
                 </div>
                 <h1 class="text-xl font-bold tracking-tight">N在庫管理システム</h1>
-                <p class="text-blue-200 text-xs mt-1 font-mono">Version 1.0.0</p>
+                <p class="text-blue-200 text-xs mt-1 font-mono">Version 1.0.1</p>
             </div>
 
             <!-- タブ切り替え -->
@@ -158,7 +158,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg sm:text-xl font-bold tracking-tight">N在庫管理システム</h1>
-                        <p class="text-[11px] text-slate-400 font-mono">Version 1.0.0</p>
+                        <p class="text-[11px] text-slate-400 font-mono">Version 1.0.1</p>
                     </div>
                 </div>
 
@@ -555,7 +555,7 @@
         <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div class="text-xs text-slate-400 font-mono">
-                    N在庫管理システム — Version 1.0.0
+                    N在庫管理システム — Version 1.0.1
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="confirmDeduplicateAllData()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5" title="車両・パーツ・線路の全項目が完全に一致している重複データを検出して削除します">
@@ -1271,6 +1271,10 @@
                             設定保存
                         </button>
                     </div>
+                    <label class="inline-flex items-center gap-2 pt-1 cursor-pointer select-none text-xs font-bold text-slate-700">
+                        <input type="checkbox" id="google-auto-connect-drive" onchange="toggleGoogleAutoConnect(this.checked)" class="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" checked>
+                        <span>ログイン時にGoogleマイドライブ・スプレッドシートへ自動接続する</span>
+                    </label>
                 </div>
 
                 <!-- 接続・手動同期ボタン -->
@@ -1399,6 +1403,17 @@
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i> シートを開く
                             </button>
                         </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-4 pt-0.5">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
+                            <input type="checkbox" id="google-auto-connect-sheets" onchange="toggleGoogleAutoConnect(this.checked)" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" checked>
+                            <span>起動時にスプレッドシートへ自動接続する</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
+                            <input type="checkbox" id="gsheets-auto-sync-save" onchange="toggleSheetsAutoSyncSave(this.checked)" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" checked>
+                            <span>データ保存時にシートへ自動反映する</span>
+                        </label>
                     </div>
                 </div>
 
@@ -1615,6 +1630,215 @@
             }
         ];
 
+        // ==================== 共通ユーティリティ・システム切替 ====================
+        function getAllTrainMakers() {
+            return [...new Set([...DEFAULT_MAKERS, ...customMakers, ...trainInventory.map(t => t.maker).filter(Boolean)])];
+        }
+
+        function getAllPartMakers() {
+            return [...new Set([...DEFAULT_PART_MAKERS, ...customPartMakers, ...partInventory.map(p => p.maker).filter(Boolean)])];
+        }
+
+        function getAllRailMakers() {
+            return [...new Set([...DEFAULT_RAIL_MAKERS, ...railInventory.map(r => r.maker).filter(Boolean)])];
+        }
+
+        function getAllPartTypes() {
+            return [...new Set([...DEFAULT_PART_TYPES, ...customPartTypes, ...partInventory.map(p => p.type).filter(Boolean)])];
+        }
+
+        function normalizeTrainMotor(val) {
+            const s = String(val ?? '').trim();
+            if (s === 'あり' || s === '有' || s === 'M' || s === 'true' || s === '1') return 'あり';
+            return 'なし';
+        }
+
+        function normalizeTrainBool(val) {
+            if (typeof val === 'boolean') return val;
+            const s = String(val ?? '').trim().toLowerCase();
+            return s === 'あり' || s === '有' || s === 'true' || s === '1' || s === '○' || s === 'yes';
+        }
+
+        function generateNextRegNo(prefix, list) {
+            let maxNum = 0;
+            const re = new RegExp(`^${prefix}-(\\d+)$`, 'i');
+            (list || []).forEach(item => {
+                const m = String(item.regNo || '').trim().match(re);
+                if (m) {
+                    const n = parseInt(m[1], 10);
+                    if (!isNaN(n) && n > maxNum) maxNum = n;
+                }
+            });
+            return `${prefix}-${String(maxNum + 1).padStart(4, '0')}`;
+        }
+
+        function renderMakerDropdowns() {
+            // 車両メーカー
+            const trainMakers = getAllTrainMakers();
+            document.querySelectorAll('.maker-select-target').forEach(sel => {
+                const prev = sel.value;
+                sel.innerHTML = trainMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (prev && trainMakers.includes(prev)) sel.value = prev;
+            });
+
+            const fTrainMaker = document.getElementById('filter-train-maker');
+            if (fTrainMaker) {
+                const prev = fTrainMaker.value;
+                fTrainMaker.innerHTML = `<option value="">メーカー: すべて</option>` +
+                    trainMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (prev) fTrainMaker.value = prev;
+            }
+
+            // 車両分類フィルター
+            const fTrainCat = document.getElementById('filter-train-category');
+            if (fTrainCat) {
+                const prev = fTrainCat.value;
+                const cats = [...new Set(trainInventory.map(t => (t.category || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+                fTrainCat.innerHTML = `<option value="">分類: すべて</option>` +
+                    cats.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+                if (prev) fTrainCat.value = prev;
+            }
+
+            // 車両Box No.フィルター
+            const fTrainBox = document.getElementById('filter-train-box');
+            if (fTrainBox) {
+                const prev = fTrainBox.value;
+                const boxes = [...new Set(trainInventory.map(t => (t.boxNo || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
+                fTrainBox.innerHTML = `<option value="">Box No.: すべて</option>` +
+                    boxes.map(b => `<option value="${escapeHTML(b)}">${escapeHTML(b)}</option>`).join('');
+                if (prev) fTrainBox.value = prev;
+            }
+
+            // パーツメーカー
+            const partMakers = getAllPartMakers();
+            document.querySelectorAll('.part-maker-select-target').forEach(sel => {
+                const prev = sel.value;
+                sel.innerHTML = partMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (prev && partMakers.includes(prev)) sel.value = prev;
+            });
+
+            const fPartMaker = document.getElementById('filter-part-maker');
+            if (fPartMaker) {
+                const prev = fPartMaker.value;
+                fPartMaker.innerHTML = `<option value="">メーカー: すべて</option>` +
+                    partMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (prev) fPartMaker.value = prev;
+            }
+
+            // パーツ種別
+            const partTypes = getAllPartTypes();
+            document.querySelectorAll('.part-type-select-target').forEach(sel => {
+                const prev = sel.value;
+                sel.innerHTML = partTypes.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+                if (prev && partTypes.includes(prev)) sel.value = prev;
+            });
+
+            const fPartType = document.getElementById('filter-part-type');
+            if (fPartType) {
+                const prev = fPartType.value;
+                fPartType.innerHTML = `<option value="">種別: すべて</option>` +
+                    partTypes.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+                if (prev) fPartType.value = prev;
+            }
+
+            // レールメーカー
+            const railMakers = getAllRailMakers();
+            document.querySelectorAll('.rail-maker-select-target').forEach(sel => {
+                const prev = sel.value;
+                sel.innerHTML = railMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (prev && railMakers.includes(prev)) sel.value = prev;
+            });
+
+            const fRailMaker = document.getElementById('filter-rail-maker');
+            if (fRailMaker) {
+                const prev = fRailMaker.value;
+                fRailMaker.innerHTML = `<option value="">メーカー: すべて</option>` +
+                    railMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+                if (prev) fRailMaker.value = prev;
+            }
+        }
+
+        function updateAllViews() {
+            const bTrains = document.getElementById('badge-count-trains');
+            const bParts = document.getElementById('badge-count-parts');
+            const bRails = document.getElementById('badge-count-rails');
+            if (bTrains) bTrains.textContent = trainInventory.length;
+            if (bParts) bParts.textContent = partInventory.length;
+            if (bRails) bRails.textContent = railInventory.length;
+
+            updateTrainStats();
+            renderTrainList();
+            updatePartStats();
+            renderPartList();
+            updateRailStats();
+            renderRailList();
+        }
+
+        function switchSystem(sys) {
+            activeSystem = sys;
+            const views = {
+                trains: document.getElementById('view-trains'),
+                parts: document.getElementById('view-parts'),
+                rails: document.getElementById('view-rails')
+            };
+            const navBtns = {
+                trains: document.getElementById('nav-btn-trains'),
+                parts: document.getElementById('nav-btn-parts'),
+                rails: document.getElementById('nav-btn-rails')
+            };
+            const badges = {
+                trains: document.getElementById('badge-count-trains'),
+                parts: document.getElementById('badge-count-parts'),
+                rails: document.getElementById('badge-count-rails')
+            };
+
+            const activeClasses = {
+                trains: 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm bg-blue-600 text-white',
+                parts: 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm bg-teal-600 text-white',
+                rails: 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm bg-amber-600 text-white'
+            };
+            const inactiveClass = 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition text-slate-300 hover:bg-slate-700 hover:text-white';
+
+            ['trains', 'parts', 'rails'].forEach(key => {
+                if (views[key]) {
+                    views[key].classList.toggle('hidden', key !== sys);
+                }
+                if (navBtns[key]) {
+                    navBtns[key].className = key === sys ? activeClasses[key] : inactiveClass;
+                }
+                if (badges[key]) {
+                    badges[key].className = key === sys
+                        ? 'px-1.5 py-0.5 text-[10px] rounded-full bg-white/20 text-white font-mono'
+                        : 'px-1.5 py-0.5 text-[10px] rounded-full bg-slate-700 text-slate-300 font-mono';
+                }
+            });
+
+            const addBtn = document.getElementById('header-add-btn');
+            const addLabel = document.getElementById('header-add-label');
+            const footerClearLabel = document.getElementById('footer-clear-label');
+
+            if (sys === 'trains') {
+                if (addBtn) addBtn.className = 'bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center gap-1.5';
+                if (addLabel) addLabel.textContent = '車両登録';
+                if (footerClearLabel) footerClearLabel.textContent = '車両データ全消去';
+            } else if (sys === 'parts') {
+                if (addBtn) addBtn.className = 'bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center gap-1.5';
+                if (addLabel) addLabel.textContent = 'パーツ登録';
+                if (footerClearLabel) footerClearLabel.textContent = 'パーツデータ全消去';
+            } else if (sys === 'rails') {
+                if (addBtn) addBtn.className = 'bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center gap-1.5';
+                if (addLabel) addLabel.textContent = '線路登録';
+                if (footerClearLabel) footerClearLabel.textContent = '線路データ全消去';
+            }
+            refreshIcons();
+        }
+
+        function openActiveModal() {
+            if (activeSystem === 'trains') openTrainModal();
+            else if (activeSystem === 'parts') openPartModal();
+            else if (activeSystem === 'rails') openRailModal();
+        }
+
         // ==================== アカウント認証・ユーザー管理 ====================
         function getUsers() {
             let users = {};
@@ -1736,6 +1960,7 @@
             loadUserData();
             switchSystem('trains');
             refreshIcons();
+            initGoogleAutoConnect();
         }
 
         function handleLogout() {
@@ -1884,217 +2109,8 @@
             if (autoSyncDrive && driveAccessToken) {
                 syncToGoogleDrive(false);
             }
-        }
-
-        function updateAllViews() {
-            updateNavBadges();
-            updateTrainStats();
-            renderTrainList();
-            updatePartStats();
-            renderPartList();
-            updateRailStats();
-            renderRailList();
-        }
-
-        // ==================== システム切替＆共通ユーティリティ ====================
-        function switchSystem(sys) {
-            activeSystem = sys;
-            const views = {
-                trains: document.getElementById('view-trains'),
-                parts: document.getElementById('view-parts'),
-                rails: document.getElementById('view-rails')
-            };
-            const navBtns = {
-                trains: document.getElementById('nav-btn-trains'),
-                parts: document.getElementById('nav-btn-parts'),
-                rails: document.getElementById('nav-btn-rails')
-            };
-
-            Object.keys(views).forEach(k => {
-                if (k === sys) {
-                    views[k].classList.remove('hidden');
-                } else {
-                    views[k].classList.add('hidden');
-                }
-            });
-
-            Object.keys(navBtns).forEach(k => {
-                const badge = document.getElementById(`badge-count-${k}`);
-                if (k === sys) {
-                    const activeColors = {
-                        trains: 'bg-blue-600 text-white',
-                        parts: 'bg-teal-600 text-white',
-                        rails: 'bg-amber-600 text-white'
-                    };
-                    navBtns[k].className = `flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm ${activeColors[k]}`;
-                    if (badge) badge.className = 'px-1.5 py-0.5 text-[10px] rounded-full bg-white/20 text-white font-mono';
-                } else {
-                    navBtns[k].className = 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition text-slate-300 hover:bg-slate-700 hover:text-white';
-                    if (badge) badge.className = 'px-1.5 py-0.5 text-[10px] rounded-full bg-slate-700 text-slate-300 font-mono';
-                }
-            });
-
-            const addBtn = document.getElementById('header-add-btn');
-            const addLabel = document.getElementById('header-add-label');
-            const clearLabel = document.getElementById('footer-clear-label');
-            if (sys === 'trains') {
-                addBtn.className = 'bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center gap-1.5';
-                addLabel.textContent = '車両登録';
-                if (clearLabel) clearLabel.textContent = '車両データ全消去';
-            } else if (sys === 'parts') {
-                addBtn.className = 'bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center gap-1.5';
-                addLabel.textContent = 'パーツ登録';
-                if (clearLabel) clearLabel.textContent = 'パーツデータ全消去';
-            } else {
-                addBtn.className = 'bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center gap-1.5';
-                addLabel.textContent = '線路登録';
-                if (clearLabel) clearLabel.textContent = '線路データ全消去';
-            }
-            refreshIcons();
-        }
-
-        function openActiveModal() {
-            if (activeSystem === 'trains') openTrainModal();
-            else if (activeSystem === 'parts') openPartModal();
-            else if (activeSystem === 'rails') openRailModal();
-        }
-
-        function updateNavBadges() {
-            document.getElementById('badge-count-trains').textContent = trainInventory.length;
-            document.getElementById('badge-count-parts').textContent = partInventory.length;
-            document.getElementById('badge-count-rails').textContent = railInventory.length;
-        }
-
-        function generateNextRegNo(prefix, list) {
-            let maxNum = 0;
-            const regex = new RegExp(`^${prefix}-(\\d+)$`, 'i');
-            list.forEach(item => {
-                const match = String(item.regNo || '').trim().match(regex);
-                if (match) {
-                    const num = parseInt(match[1], 10);
-                    if (num > maxNum) maxNum = num;
-                }
-            });
-            return `${prefix}-${String(maxNum + 1).padStart(4, '0')}`;
-        }
-
-        function normalizeTrainMotor(val) {
-            const s = String(val || '').trim();
-            if (s === 'あり' || s === 'M' || s === '有' || s === '1' || s.toLowerCase() === 'true') return 'あり';
-            return 'なし';
-        }
-
-        function normalizeTrainBool(val) {
-            if (typeof val === 'boolean') return val;
-            const s = String(val || '').trim().toLowerCase();
-            return s === 'あり' || s === '有' || s === '済' || s === '1' || s === 'true' || s === '○' || s === '✔';
-        }
-
-        // ==================== メーカー・パーツ種別プルダウン管理 ====================
-        function getAllTrainMakers() {
-            const set = new Set([...DEFAULT_MAKERS, ...customMakers]);
-            trainInventory.forEach(t => { if (t.maker) set.add(t.maker); });
-            return Array.from(set);
-        }
-
-        function getAllPartMakers() {
-            const set = new Set([...DEFAULT_PART_MAKERS, ...customPartMakers]);
-            partInventory.forEach(p => { if (p.maker) set.add(p.maker); });
-            return Array.from(set);
-        }
-
-        function getAllRailMakers() {
-            const set = new Set([...DEFAULT_RAIL_MAKERS]);
-            railInventory.forEach(r => { if (r.maker) set.add(r.maker); });
-            return Array.from(set);
-        }
-
-        function getAllPartTypes() {
-            const set = new Set([...DEFAULT_PART_TYPES, ...customPartTypes]);
-            partInventory.forEach(p => { if (p.type) set.add(p.type); });
-            return Array.from(set);
-        }
-
-        function renderMakerDropdowns() {
-            // 車両メーカー
-            const trainMakers = getAllTrainMakers();
-            document.querySelectorAll('.maker-select-target').forEach(sel => {
-                const cur = sel.value;
-                sel.innerHTML = trainMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                if (cur && trainMakers.includes(cur)) sel.value = cur;
-            });
-            const fTrainMaker = document.getElementById('filter-train-maker');
-            if (fTrainMaker) {
-                const cur = fTrainMaker.value;
-                fTrainMaker.innerHTML = '<option value="">メーカー: すべて</option>' +
-                    trainMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                fTrainMaker.value = cur;
-            }
-
-            // 車両分類フィルター
-            const fTrainCat = document.getElementById('filter-train-category');
-            if (fTrainCat) {
-                const cur = fTrainCat.value;
-                const cats = Array.from(new Set(trainInventory.map(t => (t.category || '').trim()).filter(Boolean))).sort();
-                fTrainCat.innerHTML = '<option value="">分類: すべて</option>' +
-                    cats.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
-                fTrainCat.value = cur;
-            }
-
-            // 車両Box No.フィルター
-            const fTrainBox = document.getElementById('filter-train-box');
-            if (fTrainBox) {
-                const cur = fTrainBox.value;
-                const boxes = Array.from(new Set(trainInventory.map(t => (t.boxNo || '').trim()).filter(Boolean)))
-                    .sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
-                fTrainBox.innerHTML = '<option value="">Box No.: すべて</option>' +
-                    boxes.map(b => `<option value="${escapeHTML(b)}">${escapeHTML(b)}</option>`).join('');
-                fTrainBox.value = cur;
-            }
-
-            // パーツメーカー
-            const partMakers = getAllPartMakers();
-            document.querySelectorAll('.part-maker-select-target').forEach(sel => {
-                const cur = sel.value;
-                sel.innerHTML = partMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                if (cur && partMakers.includes(cur)) sel.value = cur;
-            });
-            const fPartMaker = document.getElementById('filter-part-maker');
-            if (fPartMaker) {
-                const cur = fPartMaker.value;
-                fPartMaker.innerHTML = '<option value="">メーカー: すべて</option>' +
-                    partMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                fPartMaker.value = cur;
-            }
-
-            // パーツ種別
-            const partTypes = getAllPartTypes();
-            document.querySelectorAll('.part-type-select-target').forEach(sel => {
-                const cur = sel.value;
-                sel.innerHTML = partTypes.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
-                if (cur && partTypes.includes(cur)) sel.value = cur;
-            });
-            const fPartType = document.getElementById('filter-part-type');
-            if (fPartType) {
-                const cur = fPartType.value;
-                fPartType.innerHTML = '<option value="">種別: すべて</option>' +
-                    partTypes.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
-                fPartType.value = cur;
-            }
-
-            // 線路メーカー
-            const railMakers = getAllRailMakers();
-            document.querySelectorAll('.rail-maker-select-target').forEach(sel => {
-                const cur = sel.value;
-                sel.innerHTML = railMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                if (cur && railMakers.includes(cur)) sel.value = cur;
-            });
-            const fRailMaker = document.getElementById('filter-rail-maker');
-            if (fRailMaker) {
-                const cur = fRailMaker.value;
-                fRailMaker.innerHTML = '<option value="">メーカー: すべて</option>' +
-                    railMakers.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
-                fRailMaker.value = cur;
+            if (autoSyncDrive && sheetsAccessToken && getSavedSpreadsheetId() && isSheetsAutoSyncSaveEnabled()) {
+                pushAllToGoogleSheets(true);
             }
         }
 
@@ -3348,7 +3364,6 @@
                 const aiResult = await fetchProductMetadataFromAI(maker, code, categoryLabel, forceRefresh);
                 if (aiResult && (aiResult.name || aiResult.setName || aiResult.price > 0)) {
                     lastProductLookupData[lookupKey] = aiResult;
-                    // 未入力欄があれば自動入力し、既存入力がある場合でもワンクリックで上書き反映可能にする
                     applyFn(false);
 
                     const applyHandlerMap = {
@@ -3709,7 +3724,7 @@
                         let price = parseInt(String(r[idxPrice] || '0').replace(/[^\d]/g, ''), 10) || 0;
 
                         if (!name && modelNo && dataRows.length <= 15) {
-                            const ai = await fetchProductMetadataFromAI(maker, modelNo, '線路');
+                            const ai = await fetchProductMetadataFromAI(maker, modelNo, '線路・レール');
                             if (ai) {
                                 if (ai.name) name = ai.name;
                                 if (ai.price > 0 && price === 0) price = ai.price;
@@ -4108,9 +4123,132 @@
         }
 
         // ==================== Googleマイドライブ連携＆JSON入出力 ====================
+        function updateDriveStatusUI(connected, logText) {
+            const dot = document.getElementById('gdrive-status-dot');
+            const text = document.getElementById('gdrive-status-text');
+            const log = document.getElementById('gdrive-sync-log');
+            if (dot) {
+                dot.className = connected
+                    ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse'
+                    : 'w-2 h-2 rounded-full bg-slate-400';
+            }
+            if (text) {
+                text.textContent = connected ? 'ドライブ同期中' : 'Googleドライブ';
+            }
+            if (log && logText) {
+                log.textContent = logText;
+            }
+        }
+
+        function updateSheetsStatusUI(connected, logText) {
+            const dot = document.getElementById('gsheets-status-dot');
+            const text = document.getElementById('gsheets-status-text');
+            const log = document.getElementById('gsheets-sync-log');
+            if (dot) {
+                dot.className = connected
+                    ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse'
+                    : 'w-2 h-2 rounded-full bg-slate-400';
+            }
+            if (text) {
+                text.textContent = connected ? 'シート連携中' : 'スプレッドシート';
+            }
+            if (log && logText) {
+                log.textContent = logText;
+            }
+        }
+
+        function isGoogleAutoConnectEnabled() {
+            const val = localStorage.getItem('n_inv_google_auto_connect');
+            return val === null ? true : val === 'true';
+        }
+
+        function isSheetsAutoSyncSaveEnabled() {
+            const val = localStorage.getItem('n_inv_gsheets_auto_sync_save');
+            return val === null ? true : val === 'true';
+        }
+
+        function toggleGoogleAutoConnect(enabled) {
+            localStorage.setItem('n_inv_google_auto_connect', String(Boolean(enabled)));
+            const dChk = document.getElementById('google-auto-connect-drive');
+            const sChk = document.getElementById('google-auto-connect-sheets');
+            if (dChk) dChk.checked = Boolean(enabled);
+            if (sChk) sChk.checked = Boolean(enabled);
+            showToast(enabled ? 'Google自動接続を有効にしました' : 'Google自動接続を無効にしました', 'info');
+            if (enabled && (!driveAccessToken || !sheetsAccessToken)) {
+                autoConnectGoogleServices();
+            }
+        }
+
+        function toggleSheetsAutoSyncSave(enabled) {
+            localStorage.setItem('n_inv_gsheets_auto_sync_save', String(Boolean(enabled)));
+            showToast(enabled ? '保存時のスプレッドシート自動同期を有効にしました' : '保存時のスプレッドシート自動同期を無効にしました', 'info');
+        }
+
+        function initGoogleAutoConnect() {
+            const clientId = (localStorage.getItem('n_inv_gdrive_client_id') || '').trim();
+            const dChk = document.getElementById('google-auto-connect-drive');
+            const sChk = document.getElementById('google-auto-connect-sheets');
+            const autoSaveChk = document.getElementById('gsheets-auto-sync-save');
+            const autoEnabled = isGoogleAutoConnectEnabled();
+            if (dChk) dChk.checked = autoEnabled;
+            if (sChk) sChk.checked = autoEnabled;
+            if (autoSaveChk) autoSaveChk.checked = isSheetsAutoSyncSaveEnabled();
+
+            if (!clientId || !autoEnabled) return;
+
+            let attempts = 0;
+            const timer = setInterval(() => {
+                attempts++;
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                    clearInterval(timer);
+                    autoConnectGoogleServices();
+                } else if (attempts >= 20) {
+                    clearInterval(timer);
+                }
+            }, 500);
+        }
+
+        function autoConnectGoogleServices() {
+            const clientId = (localStorage.getItem('n_inv_gdrive_client_id') || '').trim();
+            if (!clientId) return;
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return;
+            if (driveAccessToken && sheetsAccessToken) return;
+
+            try {
+                const combinedScope = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets';
+                const unifiedClient = google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: combinedScope,
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            driveAccessToken = tokenResponse.access_token;
+                            sheetsAccessToken = tokenResponse.access_token;
+                            updateDriveStatusUI(true, 'ステータス: Googleマイドライブ自動接続完了・同期中...');
+                            const sheetId = getSavedSpreadsheetId();
+                            updateSheetsStatusUI(
+                                true,
+                                sheetId
+                                    ? 'ステータス: Googleスプレッドシート自動接続完了（保存時に自動反映されます）'
+                                    : 'ステータス: Googleスプレッドシート自動接続完了（「新規作成」でシートを作成できます）'
+                            );
+                            showToast('Googleマイドライブ・スプレッドシートに自動接続しました', 'success');
+                            await syncFromGoogleDrive(false);
+                        }
+                    }
+                });
+                driveTokenClient = unifiedClient;
+                sheetsTokenClient = unifiedClient;
+                unifiedClient.requestAccessToken({ prompt: '' });
+            } catch (e) {
+                console.warn('Google auto-connect skipped:', e);
+            }
+        }
+
         function openDriveModal() {
             const savedClientId = localStorage.getItem('n_inv_gdrive_client_id') || '';
             document.getElementById('gdrive-client-id-input').value = savedClientId;
+            const dChk = document.getElementById('google-auto-connect-drive');
+            if (dChk) dChk.checked = isGoogleAutoConnectEnabled();
             const modal = document.getElementById('drive-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -4126,20 +4264,9 @@
             const id = document.getElementById('gdrive-client-id-input').value.trim();
             localStorage.setItem('n_inv_gdrive_client_id', id);
             showToast('GoogleクライアントIDを保存しました', 'success');
-        }
-
-        function updateDriveStatusUI(connected, msg) {
-            const dot = document.getElementById('gdrive-status-dot');
-            const text = document.getElementById('gdrive-status-text');
-            const log = document.getElementById('gdrive-sync-log');
-            if (connected) {
-                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-                text.textContent = 'ドライブ同期中';
-            } else {
-                dot.className = 'w-2 h-2 rounded-full bg-slate-400';
-                text.textContent = 'Googleドライブ';
+            if (id && isGoogleAutoConnectEnabled() && !driveAccessToken) {
+                autoConnectGoogleServices();
             }
-            if (log && msg) log.textContent = msg;
         }
 
         function connectGoogleDrive() {
@@ -4156,12 +4283,14 @@
             try {
                 driveTokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: clientId,
-                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
                     callback: async (tokenResponse) => {
                         if (tokenResponse && tokenResponse.access_token) {
                             driveAccessToken = tokenResponse.access_token;
+                            sheetsAccessToken = tokenResponse.access_token;
                             updateDriveStatusUI(true, 'ステータス: Googleマイドライブ接続完了・同期確認中...');
-                            showToast('Googleマイドライブに接続しました', 'success');
+                            updateSheetsStatusUI(true, 'ステータス: Googleスプレッドシート接続完了');
+                            showToast('Googleマイドライブ・スプレッドシートに接続しました', 'success');
                             await syncFromGoogleDrive(false);
                         }
                     }
@@ -4191,6 +4320,7 @@
             try {
                 const fileId = await findDriveFileId();
                 if (!fileId) {
+                    updateDriveStatusUI(true, 'ステータス: ドライブ上に新規ファイルを作成します');
                     await syncToGoogleDrive(manual);
                     return;
                 }
@@ -4198,22 +4328,23 @@
                 const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
                     headers: { Authorization: `Bearer ${driveAccessToken}` }
                 });
-                if (res.ok) {
-                    const cloudData = await res.json();
-                    if (cloudData.trains) trainInventory = cloudData.trains;
-                    if (cloudData.parts) partInventory = cloudData.parts;
-                    if (cloudData.rails) railInventory = cloudData.rails;
-                    if (cloudData.customMakers) customMakers = cloudData.customMakers;
-                    if (cloudData.customPartMakers) customPartMakers = cloudData.customPartMakers;
-                    if (cloudData.customPartTypes) customPartTypes = cloudData.customPartTypes;
-                    saveUserData(false);
-                    const nowStr = new Date().toLocaleTimeString();
-                    updateDriveStatusUI(true, `ステータス: ドライブから最新データを同期完了 (${nowStr})`);
-                    if (manual) showToast('Googleドライブからデータを読み込みました', 'success');
-                }
+                if (!res.ok) throw new Error('読込失敗');
+                const data = await res.json();
+
+                if (Array.isArray(data.trains)) trainInventory = data.trains;
+                if (Array.isArray(data.parts)) partInventory = data.parts;
+                if (Array.isArray(data.rails)) railInventory = data.rails;
+                if (Array.isArray(data.customMakers)) customMakers = data.customMakers;
+                if (Array.isArray(data.customPartMakers)) customPartMakers = data.customPartMakers;
+                if (Array.isArray(data.customPartTypes)) customPartTypes = data.customPartTypes;
+
+                saveUserData(false);
+                const nowStr = new Date().toLocaleTimeString();
+                updateDriveStatusUI(true, `ステータス: マイドライブから同期完了 (${nowStr})`);
+                if (manual) showToast('Googleマイドライブから最新データを読み込みました', 'success');
             } catch (e) {
-                updateDriveStatusUI(true, 'ステータス: 読込エラーが発生しました');
-                if (manual) showToast('ドライブからの読込に失敗しました', 'error');
+                updateDriveStatusUI(true, 'ステータス: ドライブからの読込に失敗しました');
+                if (manual) showToast('ドライブからの読み込みに失敗しました', 'error');
             }
         }
 
@@ -4334,6 +4465,10 @@
             const savedSheetId = getSavedSpreadsheetId();
             document.getElementById('gsheets-client-id-input').value = savedClientId;
             document.getElementById('gsheets-spreadsheet-id-input').value = savedSheetId;
+            const sChk = document.getElementById('google-auto-connect-sheets');
+            const autoSaveChk = document.getElementById('gsheets-auto-sync-save');
+            if (sChk) sChk.checked = isGoogleAutoConnectEnabled();
+            if (autoSaveChk) autoSaveChk.checked = isSheetsAutoSyncSaveEnabled();
             const modal = document.getElementById('sheets-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -4357,27 +4492,16 @@
             localStorage.setItem('n_inv_gdrive_client_id', clientId);
             setSavedSpreadsheetId(sheetId);
             showToast('スプレッドシート連携設定を保存しました', 'success');
-        }
-
-        function updateSheetsStatusUI(connected, msg) {
-            const dot = document.getElementById('gsheets-status-dot');
-            const text = document.getElementById('gsheets-status-text');
-            const log = document.getElementById('gsheets-sync-log');
-            if (connected) {
-                if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-                if (text) text.textContent = 'シート連携中';
-            } else {
-                if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-400';
-                if (text) text.textContent = 'スプレッドシート';
+            if (clientId && isGoogleAutoConnectEnabled() && !sheetsAccessToken) {
+                autoConnectGoogleServices();
             }
-            if (log && msg) log.textContent = msg;
         }
 
         function openSpreadsheetInBrowser() {
             saveSheetsConfig();
             const sheetId = getSavedSpreadsheetId();
             if (!sheetId) {
-                showToast('スプレッドシートIDが未設定です。「新規スプレッドシートを作成」を実行してください', 'warning');
+                showToast('スプレッドシートIDが未設定です。「新規スプレッドシートを作成」を押してください', 'warning');
                 return;
             }
             window.open(`https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/edit`, '_blank', 'noopener,noreferrer');
@@ -4402,9 +4526,10 @@
                     callback: (tokenResponse) => {
                         if (tokenResponse && tokenResponse.access_token) {
                             sheetsAccessToken = tokenResponse.access_token;
-                            if (!driveAccessToken) driveAccessToken = tokenResponse.access_token;
+                            driveAccessToken = tokenResponse.access_token;
+                            updateDriveStatusUI(true, 'ステータス: Googleマイドライブ接続完了');
                             updateSheetsStatusUI(true, 'ステータス: Googleスプレッドシート認証完了。「新規作成」または「書込 / 読込」を実行できます。');
-                            showToast('Googleスプレッドシートに接続しました', 'success');
+                            showToast('Googleスプレッドシート・マイドライブに接続しました', 'success');
                         }
                     }
                 });
@@ -4461,7 +4586,7 @@
                 return;
             }
             try {
-                updateSheetsStatusUI(true, 'ステータス: 新規スプレッドシートを作成中...');
+                updateSheetsStatusUI(true, 'ステータス: 新規Googleスプレッドシートを作成中...');
                 const title = `N在庫管理システム_${currentUser || 'admin'}_${new Date().toISOString().slice(0, 10)}`;
                 const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
                     method: 'POST',
@@ -4472,35 +4597,37 @@
                     body: JSON.stringify({
                         properties: { title },
                         sheets: [
-                            { properties: { title: SHEETS_NAMES.trains } },
-                            { properties: { title: SHEETS_NAMES.parts } },
-                            { properties: { title: SHEETS_NAMES.rails } }
+                            { properties: { title: SHEETS_NAMES.trains, gridProperties: { frozenRowCount: 1 } } },
+                            { properties: { title: SHEETS_NAMES.parts, gridProperties: { frozenRowCount: 1 } } },
+                            { properties: { title: SHEETS_NAMES.rails, gridProperties: { frozenRowCount: 1 } } }
                         ]
                     })
                 });
+
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData?.error?.message || 'スプレッドシートの作成に失敗しました');
+                    throw new Error(errData?.error?.message || 'スプレッドシート作成に失敗しました');
                 }
+
                 const created = await res.json();
                 setSavedSpreadsheetId(created.spreadsheetId);
                 await pushAllToGoogleSheets();
-                window.open(created.spreadsheetUrl, '_blank', 'noopener,noreferrer');
+                showToast('新規スプレッドシートを作成し、全データを書き込みました', 'success');
             } catch (e) {
-                updateSheetsStatusUI(true, `ステータス: エラー (${e.message})`);
+                updateSheetsStatusUI(true, `ステータス: 作成エラー (${e.message})`);
                 showToast(`作成エラー: ${e.message}`, 'error');
             }
         }
 
-        async function pushAllToGoogleSheets() {
+        async function pushAllToGoogleSheets(silent = false) {
             if (!sheetsAccessToken) {
-                showToast('先に「Googleアカウント認証・接続」を実行してください', 'warning');
+                if (!silent) showToast('先に「Googleアカウント認証・接続」を実行してください', 'warning');
                 return;
             }
-            saveSheetsConfig();
+            if (!silent) saveSheetsConfig();
             const sheetId = getSavedSpreadsheetId();
             if (!sheetId) {
-                showToast('スプレッドシートIDを入力するか、「新規スプレッドシートを作成」を押してください', 'warning');
+                if (!silent) showToast('スプレッドシートIDを入力するか、「新規スプレッドシートを作成」を押してください', 'warning');
                 return;
             }
 
@@ -4545,11 +4672,11 @@
                 }
 
                 const nowStr = new Date().toLocaleTimeString();
-                updateSheetsStatusUI(true, `ステータス: スプレッドシートへ書込完了 (${nowStr}) — 「シートを開く」で確認・編集できます。`);
-                showToast('Googleスプレッドシートへ全データを書き込みました', 'success');
+                updateSheetsStatusUI(true, `ステータス: スプレッドシートへ${silent ? '自動' : ''}書込完了 (${nowStr}) — 「シートを開く」で確認・編集できます。`);
+                if (!silent) showToast('Googleスプレッドシートへ全データを書き込みました', 'success');
             } catch (e) {
                 updateSheetsStatusUI(true, `ステータス: 書込エラー (${e.message})`);
-                showToast(`書込エラー: ${e.message}`, 'error');
+                if (!silent) showToast(`書込エラー: ${e.message}`, 'error');
             }
         }
 
