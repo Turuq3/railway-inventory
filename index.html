@@ -2522,6 +2522,330 @@
             }
         }
 
+        function navigateTrainEdit(direction) {
+            const currentId = document.getElementById('train-edit-id').value;
+            if (!currentId) return;
+            const sorted = getSortedTrainsByRegNo();
+            const idx = sorted.findIndex(i => i.id === currentId);
+            if (idx === -1) return;
+            const target = sorted[idx + direction];
+            if (target) editTrainItem(target.id);
+        }
+
+        function editTrainItem(id) {
+            const item = trainInventory.find(i => i.id === id);
+            if (!item) return;
+            openTrainModal();
+            document.getElementById('train-modal-title').textContent = '車両情報の編集';
+            document.getElementById('train-edit-id').value = item.id;
+            document.getElementById('train-reg-no').value = item.regNo || '';
+            document.getElementById('train-reg-date').value = item.regDate || new Date().toISOString().split('T')[0];
+            if (item.maker && !getAllTrainMakers().includes(item.maker)) {
+                customMakers.push(item.maker);
+                renderMakerDropdowns();
+            }
+            document.getElementById('train-maker').value = item.maker || 'KATO';
+            document.getElementById('train-part-no').value = item.partNo || '';
+            document.getElementById('train-name').value = item.name || '';
+            document.getElementById('train-set-name').value = item.setName || '';
+            document.getElementById('train-type').value = item.type || 'EC';
+            document.getElementById('train-form-type').value = item.formType || 'セット';
+            document.getElementById('train-category').value = item.category || '';
+            document.getElementById('train-same-item-no').value = (item.sameItemNo !== undefined && item.sameItemNo !== '') ? item.sameItemNo : (item.carNo || '1');
+            document.getElementById('train-motor').value = normalizeTrainMotor(item.motor);
+            document.getElementById('train-bmt').value = item.bmt || '-';
+            document.getElementById('train-condition').value = item.condition || '新品';
+            document.getElementById('train-box-no').value = item.boxNo || '';
+            document.getElementById('train-price').value = item.price || '';
+            document.getElementById('train-interior-light').checked = Boolean(item.interiorLight);
+            document.getElementById('train-tail-light').checked = Boolean(item.tailLight);
+            document.getElementById('train-head-tail-light').checked = Boolean(item.headTailLight);
+            document.getElementById('train-notes').value = item.notes || '';
+            setModalImagePreview('train', item.image || '');
+            updateTrainEditNavButtons(item.id);
+            refreshIcons();
+        }
+
+        function saveTrainItem(e) {
+            e.preventDefault();
+            const editId = document.getElementById('train-edit-id').value;
+            const record = {
+                id: editId || 'tr-' + Date.now(),
+                regNo: document.getElementById('train-reg-no').value.trim(),
+                regDate: document.getElementById('train-reg-date').value,
+                maker: document.getElementById('train-maker').value,
+                partNo: document.getElementById('train-part-no').value.trim(),
+                name: document.getElementById('train-name').value.trim(),
+                setName: document.getElementById('train-set-name').value.trim(),
+                type: document.getElementById('train-type').value,
+                formType: document.getElementById('train-form-type').value,
+                category: document.getElementById('train-category').value.trim(),
+                sameItemNo: document.getElementById('train-same-item-no').value.trim() || '1',
+                motor: document.getElementById('train-motor').value,
+                bmt: document.getElementById('train-bmt').value,
+                condition: document.getElementById('train-condition').value,
+                boxNo: document.getElementById('train-box-no').value.trim(),
+                price: parseInt(document.getElementById('train-price').value, 10) || 0,
+                interiorLight: document.getElementById('train-interior-light').checked,
+                tailLight: document.getElementById('train-tail-light').checked,
+                headTailLight: document.getElementById('train-head-tail-light').checked,
+                notes: document.getElementById('train-notes').value.trim(),
+                image: tempImages.train
+            };
+
+            if (editId) {
+                const idx = trainInventory.findIndex(i => i.id === editId);
+                if (idx !== -1) trainInventory[idx] = record;
+                saveUserData();
+                updateTrainEditNavButtons(editId);
+                showToast('車両情報を更新しました', 'success');
+            } else {
+                trainInventory.unshift(record);
+                saveUserData();
+                showToast('新しい車両を登録しました', 'success');
+                closeTrainModal();
+            }
+        }
+
+        function confirmDeleteTrain(id) {
+            const item = trainInventory.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('confirm-message').textContent = `「${item.regNo}: ${item.name}」を削除してもよろしいですか？`;
+            document.getElementById('confirm-exec-btn').onclick = () => {
+                trainInventory = trainInventory.filter(i => i.id !== id);
+                saveUserData();
+                closeConfirmModal();
+                showToast('車両データを削除しました', 'info');
+            };
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            refreshIcons();
+        }
+
+        // ==================== 2. パーツ管理システムロジック ====================
+        function updatePartStats() {
+            const kindsEl = document.getElementById('stat-part-kinds');
+            if (kindsEl) kindsEl.textContent = partInventory.length;
+            const totalQty = partInventory.reduce((sum, p) => sum + (Number(p.qty) || 0), 0);
+            const qtyEl = document.getElementById('stat-part-qty');
+            if (qtyEl) qtyEl.textContent = totalQty;
+            const unusedQty = partInventory
+                .filter(p => (p.status || '未使用') === '未使用')
+                .reduce((sum, p) => sum + (Number(p.qty) || 0), 0);
+            const unusedEl = document.getElementById('stat-part-unused');
+            if (unusedEl) unusedEl.textContent = unusedQty;
+            const totalPrice = partInventory.reduce((sum, p) => sum + ((Number(p.price) || 0) * (Number(p.qty) || 0)), 0);
+            const priceEl = document.getElementById('stat-part-price');
+            if (priceEl) priceEl.textContent = totalPrice.toLocaleString();
+        }
+
+        function resetPartFilters() {
+            document.getElementById('filter-part-search').value = '';
+            document.getElementById('filter-part-maker').value = '';
+            document.getElementById('filter-part-type').value = '';
+            document.getElementById('filter-part-status').value = '';
+            currentPages.parts = 1;
+            renderPartList();
+        }
+
+        function renderPartList() {
+            const container = document.getElementById('part-list-container');
+            if (!container) return;
+
+            const q = (document.getElementById('filter-part-search').value || '').trim().toLowerCase();
+            const fMaker = document.getElementById('filter-part-maker').value;
+            const fType = document.getElementById('filter-part-type').value;
+            const fStatus = document.getElementById('filter-part-status').value;
+            const sortBy = document.getElementById('sort-part-by').value;
+            const limitVal = document.getElementById('limit-part-by').value;
+
+            let filtered = partInventory.filter(item => {
+                if (fMaker && item.maker !== fMaker) return false;
+                if (fType && item.type !== fType) return false;
+                if (fStatus && (item.status || '未使用') !== fStatus) return false;
+                if (q) {
+                    const target = [item.regNo, item.name, item.maker, item.modelNo, item.usage, item.type, item.notes].join(' ').toLowerCase();
+                    if (!target.includes(q)) return false;
+                }
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'reg-asc') return (a.regNo || '').localeCompare(b.regNo || '', 'ja', { numeric: true });
+                if (sortBy === 'reg-desc') return (b.regNo || '').localeCompare(a.regNo || '', 'ja', { numeric: true });
+                if (sortBy === 'maker-asc') return (a.maker || '').localeCompare(b.maker || '', 'ja');
+                if (sortBy === 'qty-desc') return (Number(b.qty) || 0) - (Number(a.qty) || 0);
+                return 0;
+            });
+
+            document.getElementById('part-filtered-count').textContent = filtered.length;
+
+            let displayItems = filtered;
+            const rangeEl = document.getElementById('part-page-range');
+            if (limitVal !== 'all') {
+                const perPage = parseInt(limitVal, 10) || 50;
+                const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+                if (currentPages.parts > totalPages) currentPages.parts = totalPages;
+                const start = (currentPages.parts - 1) * perPage;
+                displayItems = filtered.slice(start, start + perPage);
+                if (rangeEl) rangeEl.textContent = filtered.length > 0 ? `(${start + 1}〜${start + displayItems.length}件表示)` : '';
+            } else {
+                if (rangeEl) rangeEl.textContent = '';
+            }
+
+            renderPaginationControls('part-pagination', 'parts', filtered.length, limitVal);
+
+            if (displayItems.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white rounded-2xl p-10 text-center border border-slate-200 text-slate-400">
+                        <i data-lucide="wrench" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                        <p class="text-sm font-bold text-slate-500">該当するパーツデータがありません</p>
+                        <p class="text-xs mt-1">右上の「パーツ登録」または「CSV読込」からデータを追加できます。</p>
+                    </div>`;
+                refreshIcons();
+                return;
+            }
+
+            container.innerHTML = displayItems.map(item => {
+                const statusColors = {
+                    '未使用': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    '一部使用': 'bg-amber-50 text-amber-700 border-amber-200',
+                    '使用中': 'bg-slate-100 text-slate-600 border-slate-200'
+                };
+                const stColor = statusColors[item.status] || statusColors['未使用'];
+                const imgHtml = item.image
+                    ? `<img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.name)}" class="w-full h-36 object-cover bg-slate-100">`
+                    : `<div class="w-full h-24 bg-gradient-to-r from-slate-100 to-teal-50/60 flex items-center justify-center text-slate-300 border-b border-slate-100">
+                        <i data-lucide="wrench" class="w-8 h-8 opacity-40"></i>
+                       </div>`;
+                return `
+                    <article class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden flex flex-col hover:shadow-md transition">
+                        ${imgHtml}
+                        <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 font-mono text-xs font-bold border border-teal-200">${escapeHTML(item.regNo)}</span>
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-bold">${escapeHTML(item.maker)}</span>
+                                        ${item.modelNo ? `<span class="text-xs font-mono text-slate-500">${escapeHTML(item.modelNo)}</span>` : ''}
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-bold shrink-0 ${stColor}">${escapeHTML(item.status || '未使用')}</span>
+                                </div>
+                                <h3 class="font-bold text-sm text-slate-800 break-words leading-snug">${escapeHTML(item.name)}</h3>
+                                ${item.usage ? `<p class="text-xs text-slate-500 mt-1 break-words leading-relaxed">用途: ${escapeHTML(item.usage)}</p>` : ''}
+                            </div>
+
+                            <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-semibold">${escapeHTML(item.type || 'カプラー')}</span>
+                                    <span class="font-bold text-blue-700">所持数: <strong class="font-mono text-sm">${Number(item.qty) || 0}</strong> 個</span>
+                                </div>
+                                ${item.notes ? `<p class="text-[11px] text-slate-500 break-words whitespace-pre-line leading-relaxed">${escapeHTML(item.notes)}</p>` : ''}
+                                <div class="flex items-center justify-between pt-1">
+                                    <span class="text-xs font-mono font-bold text-slate-700">定価: ¥${(Number(item.price) || 0).toLocaleString()}</span>
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" onclick="editPartItem('${escapeHTML(item.id)}')" class="p-1.5 rounded-lg text-slate-500 hover:text-teal-600 hover:bg-teal-50 transition" title="編集">
+                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        </button>
+                                        <button type="button" onclick="confirmDeletePart('${escapeHTML(item.id)}')" class="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition" title="削除">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>`;
+            }).join('');
+            refreshIcons();
+        }
+
+        function openPartModal() {
+            document.getElementById('part-modal-title').textContent = '新規パーツ登録';
+            document.getElementById('part-edit-id').value = '';
+            document.getElementById('part-form').reset();
+            document.getElementById('part-reg-no').value = generateNextRegNo('P', partInventory);
+            document.getElementById('part-qty').value = 1;
+            document.getElementById('part-status').value = '未使用';
+            document.getElementById('part-lookup-status').classList.add('hidden');
+            setModalImagePreview('part', '');
+            renderMakerDropdowns();
+            updatePartEditNavButtons(null);
+
+            const modal = document.getElementById('part-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            refreshIcons();
+        }
+
+        function closePartModal() {
+            const modal = document.getElementById('part-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function getSortedPartsByRegNo() {
+            return [...partInventory].sort((a, b) =>
+                (a.regNo || '').localeCompare(b.regNo || '', 'ja', { numeric: true })
+            );
+        }
+
+        function updatePartEditNavButtons(editId) {
+            const prevBtn = document.getElementById('part-prev-btn');
+            const nextBtn = document.getElementById('part-next-btn');
+            const headerNavGroup = document.getElementById('part-header-nav-group');
+            const headerPrevBtn = document.getElementById('part-header-prev-btn');
+            const headerNextBtn = document.getElementById('part-header-next-btn');
+            const posBadge = document.getElementById('part-edit-pos-badge');
+
+            if (!editId) {
+                [prevBtn, nextBtn, headerNavGroup].forEach(el => {
+                    if (el) {
+                        el.classList.add('hidden');
+                        el.classList.remove('flex');
+                    }
+                });
+                if (posBadge) posBadge.classList.add('hidden');
+                return;
+            }
+
+            const sorted = getSortedPartsByRegNo();
+            const idx = sorted.findIndex(i => i.id === editId);
+
+            [prevBtn, nextBtn, headerNavGroup].forEach(el => {
+                if (el) {
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                }
+            });
+
+            if (idx === -1) {
+                if (prevBtn) prevBtn.disabled = true;
+                if (nextBtn) nextBtn.disabled = true;
+                if (headerPrevBtn) headerPrevBtn.disabled = true;
+                if (headerNextBtn) headerNextBtn.disabled = true;
+                if (posBadge) posBadge.classList.add('hidden');
+                return;
+            }
+
+            const hasPrev = idx > 0;
+            const hasNext = idx < sorted.length - 1;
+            if (prevBtn) {
+                prevBtn.disabled = !hasPrev;
+                prevBtn.title = hasPrev ? `前の登録番号へ (${sorted[idx - 1].regNo})` : '先頭の登録番号です';
+            }
+            if (nextBtn) {
+                nextBtn.disabled = !hasNext;
+                nextBtn.title = hasNext ? `次の登録番号へ (${sorted[idx + 1].regNo})` : '最後の登録番号です';
+            }
+            if (headerPrevBtn) headerPrevBtn.disabled = !hasPrev;
+            if (headerNextBtn) headerNextBtn.disabled = !hasNext;
+            if (posBadge) {
+                posBadge.textContent = `${idx + 1} / ${sorted.length}`;
+                posBadge.classList.remove('hidden');
+            }
+        }
+
         function navigatePartEdit(direction) {
             const currentId = document.getElementById('part-edit-id').value;
             if (!currentId) return;
@@ -3269,13 +3593,13 @@
                     const idxInterior = colIndex(['室内灯'], 15);
                     const idxTail = colIndex(['尾灯'], 16);
                     const idxHeadTail = colIndex(['前尾灯照'], 17);
-                    const idxNotes = headers.length > 0
-                        ? colIndex(['備考'], 18)
-                        : (r.length <= 16 ? 15 : 18);
 
                     let nextNum = parseInt(generateNextRegNo('T', trainInventory).split('-')[1], 10) || 1;
                     for (let i = 0; i < dataRows.length; i++) {
                         const r = dataRows[i];
+                        const idxNotes = headers.length > 0
+                            ? colIndex(['備考'], 18)
+                            : (r.length <= 16 ? 15 : 18);
                         const regNo = (r[idxReg] || '').trim() || `T-${String(nextNum++).padStart(4, '0')}`;
                         const maker = (r[idxMaker] || '').trim() || 'KATO';
                         const partNo = (r[idxPartNo] || '').trim();
